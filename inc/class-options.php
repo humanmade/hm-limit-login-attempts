@@ -4,177 +4,31 @@ namespace HM\Limit_Login_Attempts;
 
 use HM\Limit_Login_Attempts\Plugin;
 
+/**
+ * Class Options
+ * @package HM\Limit_Login_Attempts
+ */
 class Options extends Plugin {
 
-	/* Setup global variables from options */
 	public function load() {
 
-		add_action( 'admin_menu', 'limit_login_admin_menu' );
-
-
-		$this->get_option( 'limit_login_client_type', 'client_type' );
-		$this->get_option( 'limit_login_allowed_retries', 'allowed_retries' );
-		$this->get_option( 'limit_login_lockout_duration', 'lockout_duration' );
-		$this->get_option( 'limit_login_valid_duration', 'valid_duration' );
-		$this->get_option( 'limit_login_cookies', 'cookies' );
-		$this->get_option( 'limit_login_lockout_notify', 'lockout_notify' );
-		$this->get_option( 'limit_login_allowed_lockouts', 'allowed_lockouts' );
-		$this->get_option( 'limit_login_long_duration', 'long_duration' );
-		$this->get_option( 'limit_login_notify_email_after', 'notify_email_after' );
-
-		limit_login_sanitize_variables();
+		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 
 	}
 
-	/*
-	 * Variables
-	 *
-	 * Assignments are for default value -- change on admin page.
-	 *
+	/**
+	 * Add admin options page
 	 */
-	private function variables( $option ) {
+	private function admin_menu() {
 
+		add_options_page( 'HM Limit Login Attempts', 'HM Limit Login', 'manage_options', 'hm-limit-login-attempts', array( $this, 'option_page' ) );
 
-		$limit_login_options =
-			array(
-				'client_type'     => LIMIT_LOGIN_DIRECT_ADDR, /* Are we behind a proxy? */
-				'allowed_retries' => 4,     /* Lock out after this many tries */
-				'lockout_duration' => 1200, /* Lock out for this many seconds - default to 20 minutes */
-				'allowed_lockouts' => 4,    /* Long lock out after this many lockouts */
-				'long_duration' => 86400,   /* Long lock out for this many seconds - defaults to 24 hours */
-				'valid_duration' => 43200,  /* Reset failed attempts after this many seconds - defaults to 12 hours */
-				'cookies' => true,			/* Also limit malformed/forged cookies? */
-				'lockout_notify' => 'log',	/* Notify on lockout. Values: '', 'log', 'email', 'log,email' */
-				'notify_email_after' => 4	/* If notify by email, do so after this number of lockouts */
-			);
-
-
-		$limit_login_my_error_shown       = false; /* have we shown our stuff? */
-		$limit_login_just_lockedout       = false; /* started this pageload??? */
-		$limit_login_nonempty_credentials = false; /* user and pwd nonempty */
-
-		return call_ref_array();
 	}
 
-	/* Only change var if option exists */
-	public function get_option( $option, $var_name ) {
-		$a = get_option( $option );
-
-		if ( $a !== false ) {
-			global $limit_login_options;
-
-			$limit_login_options[ $var_name ] = $a;
-		}
-	}
-
-
-	/* Get current option value */
-	public function get_current_option( $option_name ) {
-		global $limit_login_options;
-
-		if ( isset( $limit_login_options[ $option_name ] ) ) {
-			return $limit_login_options[ $option_name ];
-		} else {
-			return null;
-		}
-	}
-
-
-
-
-
-
-	/*
-	 * Admin stuff
+	/**
+	 * Show log on admin page
 	 */
-
-	/* Make a guess if we are behind a proxy or not */
-	public function limit_login_guess_proxy() {
-		return isset( $_SERVER[ LIMIT_LOGIN_PROXY_ADDR ] )
-			? LIMIT_LOGIN_PROXY_ADDR : LIMIT_LOGIN_DIRECT_ADDR;
-	}
-
-
-	/* Update options in db from global variables */
-	public function limit_login_update_options() {
-		update_option( 'limit_login_client_type', limit_login_option( 'client_type' ) );
-		update_option( 'limit_login_allowed_retries', limit_login_option( 'allowed_retries' ) );
-		update_option( 'limit_login_lockout_duration', limit_login_option( 'lockout_duration' ) );
-		update_option( 'limit_login_allowed_lockouts', limit_login_option( 'allowed_lockouts' ) );
-		update_option( 'limit_login_long_duration', limit_login_option( 'long_duration' ) );
-		update_option( 'limit_login_valid_duration', limit_login_option( 'valid_duration' ) );
-		update_option( 'limit_login_lockout_notify', limit_login_option( 'lockout_notify' ) );
-		update_option( 'limit_login_notify_email_after', limit_login_option( 'notify_email_after' ) );
-		update_option( 'limit_login_cookies', limit_login_option( 'cookies' ) ? '1' : '0' );
-	}
-
-
-	/* Make sure the variables make sense -- simple integer */
-	public function limit_login_sanitize_simple_int( $var_name ) {
-		global $limit_login_options;
-
-		$limit_login_options[ $var_name ] = max( 1, intval( limit_login_option( $var_name ) ) );
-	}
-
-
-	/* Make sure the variables make sense */
-	public function limit_login_sanitize_variables() {
-		global $limit_login_options;
-
-		limit_login_sanitize_simple_int( 'allowed_retries' );
-		limit_login_sanitize_simple_int( 'lockout_duration' );
-		limit_login_sanitize_simple_int( 'valid_duration' );
-		limit_login_sanitize_simple_int( 'allowed_lockouts' );
-		limit_login_sanitize_simple_int( 'long_duration' );
-
-		$limit_login_options['cookies'] = ! ! limit_login_option( 'cookies' );
-
-		$notify_email_after                        = max( 1, intval( limit_login_option( 'notify_email_after' ) ) );
-		$limit_login_options['notify_email_after'] = min( limit_login_option( 'allowed_lockouts' ), $notify_email_after );
-
-		$args         = explode( ',', limit_login_option( 'lockout_notify' ) );
-		$args_allowed = explode( ',', LIMIT_LOGIN_LOCKOUT_NOTIFY_ALLOWED );
-		$new_args     = array();
-		foreach ( $args as $a ) {
-			if ( in_array( $a, $args_allowed ) ) {
-				$new_args[] = $a;
-			}
-		}
-		$limit_login_options['lockout_notify'] = implode( ',', $new_args );
-
-		if ( limit_login_option( 'client_type' ) != LIMIT_LOGIN_DIRECT_ADDR
-		     && limit_login_option( 'client_type' ) != LIMIT_LOGIN_PROXY_ADDR
-		) {
-			$limit_login_options['client_type'] = LIMIT_LOGIN_DIRECT_ADDR;
-		}
-	}
-
-
-	/* Add admin options page */
-	public function limit_login_admin_menu() {
-		global $wp_version;
-
-		// Modern WP?
-		if ( version_compare( $wp_version, '3.0', '>=' ) ) {
-			add_options_page( 'Limit Login Attempts', 'Limit Login Attempts', 'manage_options', 'limit-login-attempts', 'limit_login_option_page' );
-
-			return;
-		}
-
-		// Older WPMU?
-		if ( function_exists( "get_current_site" ) ) {
-			add_submenu_page( 'wpmu-admin.php', 'Limit Login Attempts', 'Limit Login Attempts', 9, 'limit-login-attempts', 'limit_login_option_page' );
-
-			return;
-		}
-
-		// Older WP
-		add_options_page( 'Limit Login Attempts', 'Limit Login Attempts', 9, 'limit-login-attempts', 'limit_login_option_page' );
-	}
-
-
-	/* Show log on admin page */
-	public function limit_login_show_log( $log ) {
+	private function show_log( $log ) {
 		if ( ! is_array( $log ) || count( $log ) == 0 ) {
 			return;
 		}
@@ -194,6 +48,132 @@ class Options extends Plugin {
 			}
 			echo( '</td></tr>' );
 		}
+	}
+
+	/* Actual admin page */
+	private function option_page() {
+
+		Cookies::cleanup();
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Sorry, but you do not have permissions to change settings.' );
+		}
+
+		/* Make sure post was from this page */
+		if ( count( $_POST ) > 0 ) {
+			check_admin_referer( 'hm-limit-login-attempts-options' );
+		}
+
+		/* Should we clear log? */
+		if ( isset( $_POST['clear_log'] ) ) {
+			delete_option( 'hm_limit_login_logged' );
+			echo '<div id="message" class="updated fade"><p>'
+			     . __( 'Cleared IP log', 'limit-login-attempts' )
+			     . '</p></div>';
+		}
+
+		/* Should we reset counter? */
+		if ( isset( $_POST['reset_total'] ) ) {
+			update_option( 'hm_limit_login_lockouts_total', 0 );
+			echo '<div id="message" class="updated fade"><p>'
+			     . __( 'Reset lockout count', 'limit-login-attempts' )
+			     . '</p></div>';
+		}
+
+		/* Should we restore current lockouts? */
+		if ( isset( $_POST['reset_current'] ) ) {
+			update_option( 'hm_limit_login_lockouts', array() );
+			echo '<div id="message" class="updated fade"><p>'
+			     . __( 'Cleared current lockouts', 'limit-login-attempts' )
+			     . '</p></div>';
+		}
+
+		/* Should we update options? */
+		if ( isset( $_POST['update_options'] ) ) {
+
+			$new_options = array();
+
+			$new_options['client_type']        = $_POST['client_type'];
+			$new_options['allowed_retries']    = absint( $_POST['allowed_retries'] );
+			$new_options['lockout_duration']   = absint( $_POST['lockout_duration'] * 60 );
+			$new_options['valid_duration']     = absint( $_POST['valid_duration'] * 3600 );
+			$new_options['allowed_lockouts']   = absint( $_POST['allowed_lockouts'] );
+			$new_options['long_duration']      = absint( $_POST['long_duration'] * 3600 );
+			$new_options['notify_email_after'] = absint( $_POST['email_after'] );
+			$new_options['cookies']            = absint( isset( $_POST['cookies'] ) && $_POST['cookies'] == '1' );
+
+			$v = array();
+			if ( isset( $_POST['lockout_notify_log'] ) ) {
+				$v[] = 'log';
+			}
+			if ( isset( $_POST['lockout_notify_email'] ) ) {
+				$v[] = 'email';
+			}
+			$new_options['lockout_notify'] = implode( ',', $v );
+
+			foreach( $new_options as $option_key => $option_value ){
+
+				$meta_key = 'hm_limit_login_' . $option_key;
+				$meta_value = $option_value;
+
+				update_option( $meta_key, $meta_value );
+
+			}
+
+			echo '<div id="message" class="updated fade"><p>'
+			     . __( 'Options changed', 'limit-login-attempts' )
+			     . '</p></div>';
+		}
+
+		/* Get current options to populate the form with */
+
+		$client_type        = get_option( 'hm_limit_login_client_type' );
+		$allowed_retries    = absint( get_option( 'hm_limit_login_allowed_retries' ) );
+		$lockout_duration   = absint( get_option( 'hm_limit_login_lockout_duration' ) ) * 60;
+		$valid_duration     = absint( get_option( 'hm_limit_login_valid_duration' ) ) * 3600;
+		$allowed_lockouts   = absint( get_option( 'hm_limit_login_allowed_lockouts') );
+		$long_duration      = absint( get_option( 'hm_limit_login_long_duration' ) ) * 3600;
+		$notify_email_after = absint( get_option( 'hm_limit_login_email_after' ) );
+		$cookies            = absint( isset( $_POST['cookies'] ) && $_POST['cookies'] == '1' );
+		$lockouts_total     = absint( get_option( 'hm_limit_login_lockouts_total', 0 ) );
+		$lockouts           = get_option( 'hm_limit_login_lockouts' );
+		$lockouts_now       = is_array( $lockouts ) ? count( $lockouts ) : 0;
+		$cookies_yes        = get_option( 'hm_limit_login_cookies' ) ? ' checked ' : '';
+		$cookies_no         = get_option( 'hm_limit_login_cookies' ) ? '' : ' checked ';
+		$client_type_direct = ( $client_type == LIMIT_LOGIN_DIRECT_ADDR ? ' checked ' : '' );
+		$client_type_proxy  = ( $client_type == LIMIT_LOGIN_PROXY_ADDR ? ' checked ' : '' );
+		$client_type_guess  = $this->guess_proxy();
+		$client_type_message = '';
+		$client_type_warning = '';
+
+		if ( $client_type_guess == LIMIT_LOGIN_DIRECT_ADDR ) {
+			$client_type_message = sprintf( __( 'It appears the site is reached directly (from your IP: %s)', 'limit-login-attempts' ), limit_login_get_address( LIMIT_LOGIN_DIRECT_ADDR ) );
+		} else {
+			$client_type_message = sprintf( __( 'It appears the site is reached through a proxy server (proxy IP: %s, your IP: %s)', 'limit-login-attempts' ), Admin::get_address( LIMIT_LOGIN_DIRECT_ADDR ), Admin::get_address( LIMIT_LOGIN_PROXY_ADDR ) );
+		}
+		$client_type_message .= '<br />';
+
+		if ( $client_type != $client_type_guess ) {
+
+			$faq = 'http://wordpress.org/extend/plugins/limit-login-attempts/faq/';
+			$client_type_warning = '<br /><br />' . sprintf( __( '<strong>Current setting appears to be invalid</strong>. Please make sure it is correct. Further information can be found <a href="%s" title="FAQ">here</a>', 'limit-login-attempts' ), $faq );
+
+		}
+
+		$v             = explode( ',', get_option( 'hm_limit_login_lockout_notify' ) );
+		$log_checked   = in_array( 'log', $v ) ? ' checked ' : '';
+		$email_checked = in_array( 'email', $v ) ? ' checked ' : '';
+
+		include( trailingslashit( __DIR__ ) . 'options-page.php' );
+
+	}
+
+	/**
+	 * Make a guess if we are behind a proxy or not
+	 */
+	private function guess_proxy() {
+		return isset( $_SERVER[ LIMIT_LOGIN_PROXY_ADDR ] )
+			? LIMIT_LOGIN_PROXY_ADDR : LIMIT_LOGIN_DIRECT_ADDR;
 	}
 
 }

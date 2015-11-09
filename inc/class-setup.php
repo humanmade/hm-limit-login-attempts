@@ -4,23 +4,12 @@ namespace HM\Limit_Login_Attempts;
 
 use HM\Limit_Login_Attempts\Plugin;
 
-
-/*
- * Variables
- *
- * Assignments are for default value -- change on admin page.
- */
-
-
-$my_error_shown = false;        /* have we shown our stuff? */
-$just_lockedout = false;        /* started this pageload??? */
-$nonempty_credentials = false;  /* user and pwd nonempty */
-
-
 class Setup extends Plugin {
 
 	/* Get options and setup filters & actions */
 	public function load() {
+
+		$this->set_default_variables();
 
 		load_plugin_textdomain(
 			'limit-login-attempts',
@@ -30,11 +19,9 @@ class Setup extends Plugin {
 
 		Options::get_instance();
 		Errors::get_instance();
-		Notifition::get_instance();
-		Cookiecations::get_instance();
-		Validas::get_instance();
-
-
+		Cookies::get_instance();
+		Validation::get_instance();
+		Notifications::get_instance();
 
 
 		/*
@@ -44,5 +31,41 @@ class Setup extends Plugin {
 		 */
 		add_action( 'wp_authenticate', 'limit_login_track_credentials', 10, 2 );
 	}
+
+	/**
+	 * Variables
+	 *
+	 * Assignments are for default value -- change on admin page.
+	 *
+	 */
+	private function set_default_variables() {
+
+		$default_options =
+			array(
+				'client_type'           => LIMIT_LOGIN_DIRECT_ADDR, /* Are we behind a proxy? */
+				'allowed_retries'       => 4,       /* Lock out after this many tries */
+				'lockout_duration'      => 1200,    /* Lock out for this many seconds - default to 20 minutes */
+				'allowed_lockouts'      => 4,       /* Long lock out after this many lockouts */
+				'long_duration'         => 86400,   /* Long lock out for this many seconds - defaults to 24 hours */
+				'valid_duration'        => 43200,   /* Reset failed attempts after this many seconds - defaults to 12 hours */
+				'cookies'               => 1,       /* Also limit malformed/forged cookies? */
+				'lockout_notify'        => 'log',	/* Notify on lockout. Values: '', 'log', 'email', 'log,email' */
+				'notify_email_after'    => 4,	    /* If notify by email, do so after this number of lockouts */
+				'my_error_shown'        => false,   /* have we shown our stuff? */
+				'just_lockouts'         => false,   /* started this pageload??? */
+				'noempty_credentials'   => false,   /* user and pwd nonempty */
+			);
+
+		foreach( $default_options as $option_key => $option_value ){
+
+			$meta_key = 'hm_limit_login_' . $option_key;
+			$meta_value = $option_value;
+
+			update_option( $meta_key, $meta_value );
+
+		}
+
+	}
+
 
 }

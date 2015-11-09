@@ -42,7 +42,7 @@ defined( 'LIMIT_LOGIN_LOCKOUT_NOTIFY_ALLOWED' ) or define( 'LIMIT_LOGIN_LOCKOUT_
 
 add_action( 'plugins_loaded', function() {
 
-	require_once( trailingslashit( __DIR__ ) . 'inc/class-admin.php' );
+	require_once( trailingslashit( __DIR__ ) . 'inc/class-setup.php' );
 
 	Setup::get_instance();
 
