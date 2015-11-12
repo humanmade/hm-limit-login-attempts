@@ -5,9 +5,9 @@
 ?>
 
 <div class="wrap">
-	<h2><?php __e( 'Limit Login Attempts Settings', 'limit-login-attempts' ); ?></h2>
+	<h2><?php _e( 'Limit Login Attempts Settings', 'limit-login-attempts' ); ?></h2>
 
-	<h3><?php __e( 'Statistics', 'limit-login-attempts' ); ?></h3>
+	<h3><?php _e( 'Statistics', 'limit-login-attempts' ); ?></h3>
 
 	<form action="options-general.php?page=hm-limit-login-attempts" method="post">
 		<?php wp_nonce_field( 'hm-limit-login-attempts-options' ); ?>
@@ -19,16 +19,16 @@
 						<input name="reset_total" value="<?php echo __( 'Reset Counter', 'limit-login-attempts' ); ?>" type="submit"/>
 						<?php echo sprintf( _n( '%d lockout since last reset', '%d lockouts since last reset', $lockouts_total, 'limit-login-attempts' ), $lockouts_total ); ?>
 					<?php } else {
-						echo __( 'No lockouts yet', 'limit-login-attempts' );
+						_e( 'No lockouts yet', 'limit-login-attempts' );
 					} ?>
 				</td>
 			</tr>
 			<?php if ( $lockouts_now > 0 ) { ?>
 				<tr>
-					<th scope="row" valign="top"><?php echo __( 'Active lockouts', 'limit-login-attempts' ); ?></th>
+					<th scope="row" valign="top"><?php _e( 'Active lockouts', 'limit-login-attempts' ); ?></th>
 					<td>
 						<input name="reset_current"
-						       value="<?php echo __( 'Restore Lockouts', 'limit-login-attempts' ); ?>"
+						       value="<?php _e( 'Restore Lockouts', 'limit-login-attempts' ); ?>"
 						       type="submit"/>
 						<?php echo sprintf( __( '%d IP is currently blocked from trying to log in', 'limit-login-attempts' ), $lockouts_now ); ?>
 					</td>
@@ -36,31 +36,31 @@
 			<?php } ?>
 		</table>
 	</form>
-	<h3><?php echo __( 'Options', 'limit-login-attempts' ); ?></h3>
+	<h3><?php _e( 'Options', 'limit-login-attempts' ); ?></h3>
 
 	<form action="options-general.php?page=hm-limit-login-attempts" method="post">
 		<?php wp_nonce_field( 'hm-limit-login-attempts-options' ); ?>
 		<table class="form-table">
 			<tr>
-				<th scope="row" valign="top"><?php echo __( 'Lockout', 'limit-login-attempts' ); ?></th>
+				<th scope="row" valign="top"><?php _e( 'Lockout', 'limit-login-attempts' ); ?></th>
 				<td>
 					<input type="text" size="3" maxlength="4"
 					       value="<?php echo $allowed_retries; ?>"
-					       name="allowed_retries"/> <?php echo __( 'allowed retries', 'limit-login-attempts' ); ?>
+					       name="allowed_retries"/> <?php _e( 'allowed retries', 'limit-login-attempts' ); ?>
 					<br/>
 					<input type="text" size="3" maxlength="4"
-					       value="<?php echo( $lockout_duration / 60 ); ?>"
-					       name="lockout_duration"/> <?php echo __( 'minutes lockout', 'limit-login-attempts' ); ?>
+					       value="<?php echo( $lockout_duration ); ?>"
+					       name="lockout_duration"/> <?php _e( 'minutes lockout', 'limit-login-attempts' ); ?>
 					<br/>
 					<input type="text" size="3" maxlength="4"
 					       value="<?php echo $allowed_lockouts; ?>"
-					       name="allowed_lockouts"/> <?php echo __( 'lockouts increase lockout time to', 'limit-login-attempts' ); ?>
+					       name="allowed_lockouts"/> <?php _e( 'lockouts increase lockout time to', 'limit-login-attempts' ); ?>
 					<input type="text" size="3" maxlength="4"
-					       value="<?php echo( $long_duration / 3600 ); ?>"
-					       name="long_duration"/> <?php echo __( 'hours', 'limit-login-attempts' ); ?> <br/>
+					       value="<?php echo( $long_duration ); ?>"
+					       name="long_duration"/> <?php _e( ' hours', 'limit-login-attempts' ); ?> <br/>
 					<input type="text" size="3" maxlength="4"
-					       value="<?php echo( $valid_duration / 3600 ); ?>"
-					       name="valid_duration"/> <?php echo __( 'hours until retries are reset', 'limit-login-attempts' ); ?>
+					       value="<?php echo( $valid_duration ); ?>"
+					       name="valid_duration"/> <?php _e( 'hours until retries are reset', 'limit-login-attempts' ); ?>
 				</td>
 			</tr>
 			<tr>

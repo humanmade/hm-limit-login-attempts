@@ -40,9 +40,11 @@ defined( 'LIMIT_LOGIN_PROXY_ADDR' ) or define( 'LIMIT_LOGIN_PROXY_ADDR', 'HTTP_X
 /* Notify value checked against these in limit_login_sanitize_variables() */
 defined( 'LIMIT_LOGIN_LOCKOUT_NOTIFY_ALLOWED' ) or define( 'LIMIT_LOGIN_LOCKOUT_NOTIFY_ALLOWED', 'log,email' );
 
+define('HM_LIMIT_LOGIN_ATTEMPTS_DIR', trailingslashit( __DIR__ ) );
 add_action( 'plugins_loaded', function() {
 
-	require_once( trailingslashit( __DIR__ ) . 'inc/class-setup.php' );
+	require_once( HM_LIMIT_LOGIN_ATTEMPTS_DIR . 'class-plugin.php' );
+	require_once( HM_LIMIT_LOGIN_ATTEMPTS_DIR . 'inc/class-setup.php' );
 
 	Setup::get_instance();
 

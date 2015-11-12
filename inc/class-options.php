@@ -19,7 +19,7 @@ class Options extends Plugin {
 	/**
 	 * Add admin options page
 	 */
-	private function admin_menu() {
+	public function admin_menu() {
 
 		add_options_page( 'HM Limit Login Attempts', 'HM Limit Login', 'manage_options', 'hm-limit-login-attempts', array( $this, 'option_page' ) );
 
@@ -51,7 +51,7 @@ class Options extends Plugin {
 	}
 
 	/* Actual admin page */
-	private function option_page() {
+	public function option_page() {
 
 		Cookies::cleanup();
 
@@ -90,15 +90,15 @@ class Options extends Plugin {
 
 		/* Should we update options? */
 		if ( isset( $_POST['update_options'] ) ) {
-
+			var_dump($_POST);
 			$new_options = array();
 
 			$new_options['client_type']        = $_POST['client_type'];
 			$new_options['allowed_retries']    = absint( $_POST['allowed_retries'] );
-			$new_options['lockout_duration']   = absint( $_POST['lockout_duration'] * 60 );
-			$new_options['valid_duration']     = absint( $_POST['valid_duration'] * 3600 );
+			$new_options['lockout_duration']   = absint( $_POST['lockout_duration'] * 60 ); // into seconds
+			$new_options['valid_duration']     = absint( $_POST['valid_duration'] * 3600 ); // into seconds
 			$new_options['allowed_lockouts']   = absint( $_POST['allowed_lockouts'] );
-			$new_options['long_duration']      = absint( $_POST['long_duration'] * 3600 );
+			$new_options['long_duration']      = absint( $_POST['long_duration'] * 3600 );  // into seconds
 			$new_options['notify_email_after'] = absint( $_POST['email_after'] );
 			$new_options['cookies']            = absint( isset( $_POST['cookies'] ) && $_POST['cookies'] == '1' );
 
@@ -126,13 +126,12 @@ class Options extends Plugin {
 		}
 
 		/* Get current options to populate the form with */
-
 		$client_type        = get_option( 'hm_limit_login_client_type' );
 		$allowed_retries    = absint( get_option( 'hm_limit_login_allowed_retries' ) );
-		$lockout_duration   = absint( get_option( 'hm_limit_login_lockout_duration' ) ) * 60;
-		$valid_duration     = absint( get_option( 'hm_limit_login_valid_duration' ) ) * 3600;
+		$lockout_duration   = absint( get_option( 'hm_limit_login_lockout_duration' ) ) / 60 ; // in minutes
+		$valid_duration     = absint( get_option( 'hm_limit_login_valid_duration' ) ) / 3600; // in hours
 		$allowed_lockouts   = absint( get_option( 'hm_limit_login_allowed_lockouts') );
-		$long_duration      = absint( get_option( 'hm_limit_login_long_duration' ) ) * 3600;
+		$long_duration      = absint( get_option( 'hm_limit_login_long_duration' ) ) / 3600; // in hours
 		$notify_email_after = absint( get_option( 'hm_limit_login_email_after' ) );
 		$cookies            = absint( isset( $_POST['cookies'] ) && $_POST['cookies'] == '1' );
 		$lockouts_total     = absint( get_option( 'hm_limit_login_lockouts_total', 0 ) );
@@ -147,7 +146,7 @@ class Options extends Plugin {
 		$client_type_warning = '';
 
 		if ( $client_type_guess == LIMIT_LOGIN_DIRECT_ADDR ) {
-			$client_type_message = sprintf( __( 'It appears the site is reached directly (from your IP: %s)', 'limit-login-attempts' ), limit_login_get_address( LIMIT_LOGIN_DIRECT_ADDR ) );
+			$client_type_message = sprintf( __( 'It appears the site is reached directly (from your IP: %s)', 'limit-login-attempts' ), Validation::get_address( LIMIT_LOGIN_DIRECT_ADDR ) );
 		} else {
 			$client_type_message = sprintf( __( 'It appears the site is reached through a proxy server (proxy IP: %s, your IP: %s)', 'limit-login-attempts' ), Admin::get_address( LIMIT_LOGIN_DIRECT_ADDR ), Admin::get_address( LIMIT_LOGIN_PROXY_ADDR ) );
 		}

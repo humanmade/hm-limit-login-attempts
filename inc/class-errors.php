@@ -41,7 +41,7 @@ class Errors extends Plugin {
 	}
 
 	/* Filter: add this failure to login page "Shake it!" */
-	private function failure_shake( $error_codes ) {
+	public function failure_shake( $error_codes ) {
 		$error_codes[] = 'too_many_retries';
 
 		return $error_codes;
@@ -49,7 +49,7 @@ class Errors extends Plugin {
 
 	/* Construct retries remaining message */
 	private function retries_remaining_msg() {
-		$ip      = $this->get_address();
+		$ip      = Validation::get_address();
 		$retries = get_option( 'limit_login_retries' );
 		$valid   = get_option( 'limit_login_retries_valid' );
 		$allowed_retries = $this->option( 'allowed_retries' );
@@ -107,7 +107,7 @@ class Errors extends Plugin {
 
 
 	/* Fix up the error message before showing it */
-	private function fixup_error_messages( $content ) {
+	public function fixup_error_messages( $content ) {
 		global $hm_limit_login_just_lockedout, $hm_limit_login_nonempty_credentials, $hm_limit_login_my_error_shown;
 
 		if ( ! $this->should_limit_login_show_msg() ) {

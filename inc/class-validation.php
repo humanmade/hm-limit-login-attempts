@@ -14,7 +14,7 @@ class Validation extends Plugin {
 	public function get_address( $type_name = '' ) {
 		$type = $type_name;
 		if ( empty( $type ) ) {
-			$type = limit_login_option( 'client_type' );
+			$type = get_option( 'hm_limit_login_client_type' );
 		}
 
 		if ( isset( $_SERVER[ $type ] ) ) {
@@ -55,10 +55,10 @@ class Validation extends Plugin {
 
 	/* Check if it is ok to login */
 	public function is_ok_to_login() {
-		$ip = $this->get_address();
+		$ip = Validation::get_address();
 
 		/* Check external whitelist filter */
-		if ( is_ip_whitelisted( $ip ) ) {
+		if ( Validation::is_ip_whitelisted( $ip ) ) {
 			return true;
 		}
 
