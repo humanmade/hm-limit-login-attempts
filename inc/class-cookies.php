@@ -21,7 +21,7 @@ class Cookies extends Plugin {
 
 	}
 
-	/*
+	/**
 	 * Must be called in plugin_loaded (really early) to make sure we do not allow
 	 * auth cookies while locked out.
 	 */
