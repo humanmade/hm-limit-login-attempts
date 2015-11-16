@@ -126,7 +126,10 @@ class Cookies extends Plugin {
 	 * notifications done as usual, but no lockout is done.
 	 */
 	function failed( $username ) {
-		$ip = Validation::get_address();
+
+		$validation_object = Validation::get_instance();
+
+		$ip = $validation_object->get_address();
 
 		/* if currently locked-out, do not add to retries */
 		$lockouts = get_option( 'hm_limit_login_lockouts' );
@@ -171,7 +174,7 @@ class Cookies extends Plugin {
 
 		/* lockout! */
 
-		$whitelisted = Validation::is_ip_whitelisted( $ip );
+		$whitelisted = $validation_object->is_ip_whitelisted( $ip );
 
 		$retries_long = get_option( 'hm_limit_login_allowed_retries' )
 		                * get_option( 'hm_limit_login_allowed_lockouts' );
@@ -205,7 +208,8 @@ class Cookies extends Plugin {
 		$this->cleanup( $retries, $lockouts, $valid );
 
 		/* do any notification */
-		Notifications::notify( $username );
+		$notifcation_object = Notifications::get_instance();
+		$notifcation_object->notify( $username );
 
 		/* increase statistics */
 		$total = get_option( 'hm_limit_login_lockouts_total' );

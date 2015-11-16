@@ -17,7 +17,9 @@ class Errors extends Plugin {
 	/* Construct informative error message */
 
 	public function error_msg() {
-		$ip       = Validation::get_address();
+
+		$validation_object = Validation::get_instance();
+		$ip       = $validation_object->get_address();
 		$lockouts = get_option( 'hm_limit_login_lockouts' );
 
 		$msg = __( '<strong>ERROR</strong>: Too many failed login attempts.', 'limit-login-attempts' ) . ' ';
@@ -49,7 +51,9 @@ class Errors extends Plugin {
 
 	/* Construct retries remaining message */
 	private function retries_remaining_msg() {
-		$ip      = Validation::get_address();
+
+		$validation_object = Validation::get_instance();
+		$ip      = $validation_object->get_address();
 		$retries = get_option( 'limit_login_retries' );
 		$valid   = get_option( 'limit_login_retries_valid' );
 		$allowed_retries = $this->option( 'allowed_retries' );
@@ -83,7 +87,8 @@ class Errors extends Plugin {
 		}
 
 		/* Is lockout in effect? */
-		if ( ! Validation::is_ok_to_login() ) {
+		$validation_object = Validation::get_instance();
+		if ( ! $validation_object->is_ok_to_login() ) {
 			return $this->_error_msg();
 		}
 
@@ -118,7 +123,8 @@ class Errors extends Plugin {
 		 * During lockout we do not want to show any other error messages (like
 		 * unknown user or empty password).
 		 */
-		if ( ! Validation::is_ok_to_login() && ! $hm_limit_login_just_lockedout ) {
+		$validation_object = Validation::get_instance();
+		if ( ! $validation_object->is_ok_to_login() && ! $hm_limit_login_just_lockedout ) {
 			return $this->error_msg();
 		}
 
@@ -188,7 +194,7 @@ class Errors extends Plugin {
 	 * Keep track of if user or password are empty,
 	 * to filter errors correctly
 	 */
-	private function track_credentials( $user, $password ) {
+	public function track_credentials( $user, $password ) {
 		global $hm_limit_login_nonempty_credentials;
 
 		$hm_limit_login_nonempty_credentials = ( ! empty( $user ) && ! empty( $password ) );

@@ -7,12 +7,13 @@ use HM\Limit_Login_Attempts\Plugin;
 class Validation extends Plugin {
 
 	public function load() {
-		add_filter( 'wp_authenticate_user', 'limit_login_wp_authenticate_user', 99999, 2 );
+		add_filter( 'wp_authenticate_user', array( $this, 'wp_authenticate_user' ), 99999, 2 );
 	}
 
 	/* Get correct remote address */
 	public function get_address( $type_name = '' ) {
 		$type = $type_name;
+
 		if ( empty( $type ) ) {
 			$type = get_option( 'hm_limit_login_client_type' );
 		}
@@ -28,7 +29,6 @@ class Validation extends Plugin {
 		if ( empty( $type_name ) && $type == LIMIT_LOGIN_PROXY_ADDR
 		     && isset( $_SERVER[ LIMIT_LOGIN_DIRECT_ADDR ] )
 		) {
-
 			/*
 			 * NOTE: Even though we fall back to direct address -- meaning you
 			 * can get a mostly working plugin when set to PROXY mode while in
@@ -44,21 +44,18 @@ class Validation extends Plugin {
 		return '';
 	}
 
-
-
-
 	/* Is this WP Multisite? */
-	function is_multisite() {
+	public function is_multisite() {
 		return function_exists( 'get_site_option' ) && function_exists( 'is_multisite' ) && is_multisite();
 	}
 
-
 	/* Check if it is ok to login */
 	public function is_ok_to_login() {
-		$ip = Validation::get_address();
+
+		$ip = $this->get_address();
 
 		/* Check external whitelist filter */
-		if ( Validation::is_ip_whitelisted( $ip ) ) {
+		if ( $this->is_ip_whitelisted( $ip ) ) {
 			return true;
 		}
 
@@ -84,7 +81,7 @@ class Validation extends Plugin {
 	 * }
 	 * add_filter('limit_login_whitelist_ip', 'my_ip_whitelist', 10, 2);
 	 */
-	function is_ip_whitelisted( $ip = null ) {
+	public function is_ip_whitelisted( $ip = null ) {
 		if ( is_null( $ip ) ) {
 			$ip = $this->get_address();
 		}
@@ -95,7 +92,7 @@ class Validation extends Plugin {
 
 
 	/* Filter: allow login attempt? (called from wp_authenticate()) */
-	function wp_authenticate_user( $user, $password ) {
+	public function wp_authenticate_user( $user, $password ) {
 		if ( is_wp_error( $user ) || $this->is_ok_to_login() ) {
 			return $user;
 		}
@@ -103,9 +100,10 @@ class Validation extends Plugin {
 		global $limit_login_my_error_shown;
 		$limit_login_my_error_shown = true;
 
-		$error = new WP_Error();
+		$error = new \WP_Error();
 		// This error should be the same as in "shake it" filter below
-		$error->add( 'too_many_retries', Errors::error_msg() );
+		$errors_object = Errors::get_instance();
+		$error->add( 'too_many_retries', $errors_object->error_msg() );
 
 		return $error;
 	}

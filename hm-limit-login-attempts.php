@@ -28,23 +28,20 @@
 
 namespace HM\Limit_Login_Attempts;
 
-
-/*
- * Constants
- */
+define('HM_LIMIT_LOGIN_VERSION', '1.0' );
+define('HM_LIMIT_LOGIN_DIR', trailingslashit( __DIR__ ) );
 
 /* Different ways to get remote address: direct & behind proxy */
-defined( 'LIMIT_LOGIN_DIRECT_ADDR' ) or define( 'LIMIT_LOGIN_DIRECT_ADDR', 'LIMIT_LOGIN_DIRECT_ADDR' );
+defined( 'LIMIT_LOGIN_DIRECT_ADDR' ) or define( 'LIMIT_LOGIN_DIRECT_ADDR', 'REMOTE_ADDR' );
 defined( 'LIMIT_LOGIN_PROXY_ADDR' ) or define( 'LIMIT_LOGIN_PROXY_ADDR', 'HTTP_X_FORWARDED_FOR' );
 
 /* Notify value checked against these in limit_login_sanitize_variables() */
 defined( 'LIMIT_LOGIN_LOCKOUT_NOTIFY_ALLOWED' ) or define( 'LIMIT_LOGIN_LOCKOUT_NOTIFY_ALLOWED', 'log,email' );
 
-define('HM_LIMIT_LOGIN_ATTEMPTS_DIR', trailingslashit( __DIR__ ) );
 add_action( 'plugins_loaded', function() {
 
-	require_once( HM_LIMIT_LOGIN_ATTEMPTS_DIR . 'class-plugin.php' );
-	require_once( HM_LIMIT_LOGIN_ATTEMPTS_DIR . 'inc/class-setup.php' );
+	require_once( HM_LIMIT_LOGIN_DIR . 'class-plugin.php' );
+	require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-setup.php' );
 
 	Setup::get_instance();
 

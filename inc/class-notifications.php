@@ -32,8 +32,9 @@ class Notifications extends Plugin {
 
 	/* Email notification of lockout to admin (if configured) */
 	private function notify_email( $user ) {
-		$ip          = Validation::get_address();
-		$whitelisted = Validation::is_ip_whitelisted( $ip );
+		$validation_object = Validation::get_instance();
+		$ip          = $validation_object->get_address();
+		$whitelisted = $validation_object->is_ip_whitelisted( $ip );
 
 		$retries = get_option( 'hm_limit_login_retries' );
 		if ( ! is_array( $retries ) ) {
@@ -99,7 +100,8 @@ class Notifications extends Plugin {
 			$log = array();
 		}
 
-		$ip = Validation::get_address();
+		$validation_object = Validation::get_instance();
+		$ip = $validation_object->get_address();
 
 		/* can be written much simpler, if you do not mind php warnings */
 		if ( isset( $log[ $ip ] ) ) {

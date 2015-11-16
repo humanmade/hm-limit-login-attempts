@@ -29,6 +29,7 @@ class Options extends Plugin {
 	 * Show log on admin page
 	 */
 	private function show_log( $log ) {
+
 		if ( ! is_array( $log ) || count( $log ) == 0 ) {
 			return;
 		}
@@ -52,8 +53,8 @@ class Options extends Plugin {
 
 	/* Actual admin page */
 	public function option_page() {
-
-		Cookies::cleanup();
+		$cookies_object = Cookies::get_instance();
+		$cookies_object->cleanup();
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'Sorry, but you do not have permissions to change settings.' );
@@ -90,7 +91,7 @@ class Options extends Plugin {
 
 		/* Should we update options? */
 		if ( isset( $_POST['update_options'] ) ) {
-			var_dump($_POST);
+
 			$new_options = array();
 
 			$new_options['client_type']        = $_POST['client_type'];
@@ -110,6 +111,8 @@ class Options extends Plugin {
 				$v[] = 'email';
 			}
 			$new_options['lockout_notify'] = implode( ',', $v );
+
+
 
 			foreach( $new_options as $option_key => $option_value ){
 
@@ -145,10 +148,14 @@ class Options extends Plugin {
 		$client_type_message = '';
 		$client_type_warning = '';
 
+		$validation_object = Validation::get_instance();
+
 		if ( $client_type_guess == LIMIT_LOGIN_DIRECT_ADDR ) {
-			$client_type_message = sprintf( __( 'It appears the site is reached directly (from your IP: %s)', 'limit-login-attempts' ), Validation::get_address( LIMIT_LOGIN_DIRECT_ADDR ) );
+
+			$client_type_message = sprintf( __( 'It appears the site is reached directly (from your IP: %s)', 'limit-login-attempts' ), $validation_object->get_address( LIMIT_LOGIN_DIRECT_ADDR ) );
+
 		} else {
-			$client_type_message = sprintf( __( 'It appears the site is reached through a proxy server (proxy IP: %s, your IP: %s)', 'limit-login-attempts' ), Admin::get_address( LIMIT_LOGIN_DIRECT_ADDR ), Admin::get_address( LIMIT_LOGIN_PROXY_ADDR ) );
+			$client_type_message = sprintf( __( 'It appears the site is reached through a proxy server (proxy IP: %s, your IP: %s)', 'limit-login-attempts' ), $validation_object->get_address( LIMIT_LOGIN_DIRECT_ADDR ), $validation_object->get_address( LIMIT_LOGIN_PROXY_ADDR ) );
 		}
 		$client_type_message .= '<br />';
 
@@ -163,7 +170,7 @@ class Options extends Plugin {
 		$log_checked   = in_array( 'log', $v ) ? ' checked ' : '';
 		$email_checked = in_array( 'email', $v ) ? ' checked ' : '';
 
-		include( trailingslashit( __DIR__ ) . 'options-page.php' );
+		include( HM_LIMIT_LOGIN_DIR . 'inc/options-page.php' );
 
 	}
 

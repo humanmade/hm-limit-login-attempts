@@ -1,7 +1,5 @@
 <?php
-
 /* Admin Options Page Template */
-
 ?>
 
 <div class="wrap">
@@ -45,7 +43,7 @@
 				<th scope="row" valign="top"><?php _e( 'Lockout', 'limit-login-attempts' ); ?></th>
 				<td>
 					<input type="text" size="3" maxlength="4"
-					       value="<?php echo $allowed_retries; ?>"
+					       value="<?php echo( $allowed_retries ); ?>"
 					       name="allowed_retries"/> <?php _e( 'allowed retries', 'limit-login-attempts' ); ?>
 					<br/>
 					<input type="text" size="3" maxlength="4"

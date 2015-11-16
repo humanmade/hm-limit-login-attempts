@@ -9,13 +9,15 @@ class Setup extends Plugin {
 	/* Get options and setup filters & actions */
 	public function load() {
 
-		require_once( HM_LIMIT_LOGIN_ATTEMPTS_DIR . 'inc/class-options.php' );
-		require_once( HM_LIMIT_LOGIN_ATTEMPTS_DIR . 'inc/class-errors.php' );
-		require_once( HM_LIMIT_LOGIN_ATTEMPTS_DIR . 'inc/class-cookies.php' );
-		require_once( HM_LIMIT_LOGIN_ATTEMPTS_DIR . 'inc/class-validation.php' );
-		require_once( HM_LIMIT_LOGIN_ATTEMPTS_DIR . 'inc/class-notifications.php' );
+		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-options.php' );
+		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-errors.php' );
+		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-cookies.php' );
+		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-validation.php' );
+		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-notifications.php' );
 
-		$this->set_default_variables();
+		if( HM_LIMIT_LOGIN_VERSION !== get_option( 'hm_limit_login_version' ) ){
+			$this->set_default_variables();
+		}
 
 		load_plugin_textdomain(
 			'limit-login-attempts',
@@ -35,7 +37,7 @@ class Setup extends Plugin {
 		 * it will probably be deprecated. That is however only available in
 		 * later versions of WP.
 		 */
-		add_action( 'wp_authenticate', 'limit_login_track_credentials', 10, 2 );
+		add_action( 'wp_authenticate', array( 'Errors', 'track_credentials' ), 10, 2 );
 	}
 
 	/**
@@ -48,6 +50,7 @@ class Setup extends Plugin {
 
 		$default_options =
 			array(
+				'version'               => HM_LIMIT_LOGIN_VERSION,
 				'client_type'           => LIMIT_LOGIN_DIRECT_ADDR, /* Are we behind a proxy? */
 				'allowed_retries'       => 4,       /* Lock out after this many tries */
 				'lockout_duration'      => 1200,    /* Lock out for this many seconds - default to 20 minutes */
