@@ -199,4 +199,5 @@ class Errors extends Plugin {
 
 		$hm_limit_login_nonempty_credentials = ( ! empty( $user ) && ! empty( $password ) );
 	}
+
 }

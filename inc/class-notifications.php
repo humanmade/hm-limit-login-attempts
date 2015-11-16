@@ -86,7 +86,7 @@ class Notifications extends Plugin {
 			$message .= sprintf( __( "IP was blocked for %s", 'limit-login-attempts' ), $when );
 		}
 
-		$admin_email = is_multisite() ? get_site_option( 'admin_email' ) : get_option( 'admin_email' );
+		$admin_email = get_site_option( 'admin_email' );
 
 		@wp_mail( $admin_email, $subject, $message );
 	}
@@ -122,3 +122,4 @@ class Notifications extends Plugin {
 	}
 
 }
+

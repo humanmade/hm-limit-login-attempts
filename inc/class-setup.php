@@ -63,6 +63,7 @@ class Setup extends Plugin {
 				'my_error_shown'        => false,   /* have we shown our stuff? */
 				'just_lockouts'         => false,   /* started this pageload??? */
 				'noempty_credentials'   => false,   /* user and pwd nonempty */
+				'lockout_method'        => 'ip'     /* method of lock out. Values: '', 'ip', 'username', 'ip,username' */
 			);
 
 		foreach( $default_options as $option_key => $option_value ){
@@ -75,6 +76,5 @@ class Setup extends Plugin {
 		}
 
 	}
-
 
 }

@@ -112,6 +112,22 @@ class Options extends Plugin {
 			}
 			$new_options['lockout_notify'] = implode( ',', $v );
 
+			$selected_lockout_method = array();
+
+			if ( isset( $_POST['lockout_method_ip'] ) ) {
+				$selected_lockout_method[] = 'ip';
+			}
+
+			if ( isset( $_POST['lockout_method_username'] ) ) {
+				$selected_lockout_method[] = 'username';
+			}
+
+			// This should never be empty. Defaulting to IP.
+			if ( empty( $selected_lockout_method ) ) {
+				$selected_lockout_method[] = 'ip';
+			}
+
+			$new_options['lockout_method'] = implode( ',', $selected_lockout_method );
 
 
 			foreach( $new_options as $option_key => $option_value ){
@@ -148,6 +164,7 @@ class Options extends Plugin {
 		$client_type_message = '';
 		$client_type_warning = '';
 
+
 		$validation_object = Validation::get_instance();
 
 		if ( $client_type_guess == LIMIT_LOGIN_DIRECT_ADDR ) {
@@ -169,6 +186,11 @@ class Options extends Plugin {
 		$v             = explode( ',', get_option( 'hm_limit_login_lockout_notify' ) );
 		$log_checked   = in_array( 'log', $v ) ? ' checked ' : '';
 		$email_checked = in_array( 'email', $v ) ? ' checked ' : '';
+
+		$saved_lockout_method = $validation_object->get_lockout_method();
+
+		$lockout_method_ip = $saved_lockout_method['ip'] ? ' checked ' : '';
+		$lockout_method_username = $saved_lockout_method['username'] ? ' checked ' : '';
 
 		include( HM_LIMIT_LOGIN_DIR . 'inc/options-page.php' );
 

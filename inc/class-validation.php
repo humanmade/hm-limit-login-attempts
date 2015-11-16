@@ -44,13 +44,36 @@ class Validation extends Plugin {
 		return '';
 	}
 
-	/* Is this WP Multisite? */
-	public function is_multisite() {
-		return function_exists( 'get_site_option' ) && function_exists( 'is_multisite' ) && is_multisite();
+	public function get_lockout_method( ) {
+		$saved_lockout_method = explode( ',', get_option( 'hm_limit_login_lockout_method' ) );
+		$lockout_method = array();
+		$lockout_method['ip'] = in_array( 'ip', $saved_lockout_method ) ? true : false ;
+		$lockout_method['username'] = in_array( 'username', $saved_lockout_method ) ? true : false;
+
+		return $lockout_method;
+
 	}
 
 	/* Check if it is ok to login */
-	public function is_ok_to_login() {
+	public function is_ok_to_login( $user ) {
+
+		$lockout_method = $this->get_lockout_method();
+
+		$ip_result = false;
+		$username_result = true;
+
+		if( $lockout_method['ip'] ){
+			$ip_result = $this->validate_ip_login();
+		}
+
+		if( $lockout_method['username'] ) {
+			$username_result = $this->validate_username_login( $user );
+		}
+
+		return ( $ip_result || $username_result );
+	}
+
+	private function validate_ip_login() {
 
 		$ip = $this->get_address();
 
@@ -63,8 +86,20 @@ class Validation extends Plugin {
 		$lockouts = get_option( 'limit_login_lockouts' );
 
 		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $ip ] ) || time() >= $lockouts[ $ip ] );
+
 	}
 
+	private function validate_username_login($user) {
+
+		if( empty( $user ) ){
+			return false;
+		}
+
+		$username = $user->user_login;
+
+		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $username ] ) || time() >= $lockouts[ $username ] );
+
+	}
 
 	/*
 	 * Check if IP is whitelisted.
@@ -93,7 +128,7 @@ class Validation extends Plugin {
 
 	/* Filter: allow login attempt? (called from wp_authenticate()) */
 	public function wp_authenticate_user( $user, $password ) {
-		if ( is_wp_error( $user ) || $this->is_ok_to_login() ) {
+		if ( is_wp_error( $user ) || $this->is_ok_to_login( $user ) ) {
 			return $user;
 		}
 
@@ -107,7 +142,5 @@ class Validation extends Plugin {
 
 		return $error;
 	}
-
-
 
 }
