@@ -54,9 +54,9 @@ class Errors extends Plugin {
 
 		$validation_object = Validation::get_instance();
 		$ip      = $validation_object->get_address();
-		$retries = get_option( 'limit_login_retries' );
-		$valid   = get_option( 'limit_login_retries_valid' );
-		$allowed_retries = $this->option( 'allowed_retries' );
+		$retries = get_option( 'hm_limit_login_retries' );
+		$valid   = get_option( 'hm_limit_login_retries_valid' );
+		$allowed_retries = get_option( 'hm_limit_login_allowed_retries' );
 
 		/* Should we show retries remaining? */
 

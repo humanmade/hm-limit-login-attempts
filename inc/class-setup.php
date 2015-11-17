@@ -51,7 +51,7 @@ class Setup extends Plugin {
 		$default_options =
 			array(
 				'version'               => HM_LIMIT_LOGIN_VERSION,
-				'client_type'           => LIMIT_LOGIN_DIRECT_ADDR, /* Are we behind a proxy? */
+				'client_type'           => HM_LIMIT_LOGIN_DIRECT_ADDR, /* Are we behind a proxy? */
 				'allowed_retries'       => 4,       /* Lock out after this many tries */
 				'lockout_duration'      => 1200,    /* Lock out for this many seconds - default to 20 minutes */
 				'allowed_lockouts'      => 4,       /* Long lock out after this many lockouts */

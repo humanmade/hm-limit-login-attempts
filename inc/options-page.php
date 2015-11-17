@@ -67,12 +67,12 @@
 					<?php echo $client_type_message; ?>
 					<label>
 						<input type="radio" name="client_type"
-							<?php echo $client_type_direct; ?> value="<?php echo LIMIT_LOGIN_DIRECT_ADDR; ?>"/>
+							<?php echo $client_type_direct; ?> value="<?php echo HM_LIMIT_LOGIN_DIRECT_ADDR; ?>"/>
 						<?php _e( 'Direct connection', 'limit-login-attempts' ); ?>
 					</label>
 					<label>
 						<input type="radio" name="client_type"
-							<?php echo $client_type_proxy; ?> value="<?php echo LIMIT_LOGIN_PROXY_ADDR; ?>"/>
+							<?php echo $client_type_proxy; ?> value="<?php echo HM_LIMIT_LOGIN_PROXY_ADDR; ?>"/>
 						<?php _e( 'From behind a reversy proxy', 'limit-login-attempts' ); ?>
 					</label>
 					<?php echo $client_type_warning; ?>
@@ -150,9 +150,7 @@
 		</style>
 		<div class="limit-login-log">
 			<table class="form-table">
-				<?php var_dump($log);
-
-				$this->show_log( $log ); ?>
+				<?php $this->show_log( $log ); ?>
 			</table>
 		</div>
 		<?php

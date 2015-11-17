@@ -158,8 +158,8 @@ class Options extends Plugin {
 		$lockouts_now       = is_array( $lockouts ) ? count( $lockouts ) : 0;
 		$cookies_yes        = get_option( 'hm_limit_login_cookies' ) ? ' checked ' : '';
 		$cookies_no         = get_option( 'hm_limit_login_cookies' ) ? '' : ' checked ';
-		$client_type_direct = ( $client_type == LIMIT_LOGIN_DIRECT_ADDR ? ' checked ' : '' );
-		$client_type_proxy  = ( $client_type == LIMIT_LOGIN_PROXY_ADDR ? ' checked ' : '' );
+		$client_type_direct = ( $client_type == HM_LIMIT_LOGIN_DIRECT_ADDR ? ' checked ' : '' );
+		$client_type_proxy  = ( $client_type == HM_LIMIT_LOGIN_PROXY_ADDR ? ' checked ' : '' );
 		$client_type_guess  = $this->guess_proxy();
 		$client_type_message = '';
 		$client_type_warning = '';
@@ -167,12 +167,19 @@ class Options extends Plugin {
 
 		$validation_object = Validation::get_instance();
 
-		if ( $client_type_guess == LIMIT_LOGIN_DIRECT_ADDR ) {
+		if ( $client_type_guess == HM_LIMIT_LOGIN_DIRECT_ADDR ) {
 
-			$client_type_message = sprintf( __( 'It appears the site is reached directly (from your IP: %s)', 'limit-login-attempts' ), $validation_object->get_address( LIMIT_LOGIN_DIRECT_ADDR ) );
+			$client_type_message = sprintf(
+				__( 'It appears the site is reached directly (from your IP: %s)', 'limit-login-attempts' ),
+				$validation_object->get_address( HM_LIMIT_LOGIN_DIRECT_ADDR )
+			);
 
 		} else {
-			$client_type_message = sprintf( __( 'It appears the site is reached through a proxy server (proxy IP: %s, your IP: %s)', 'limit-login-attempts' ), $validation_object->get_address( LIMIT_LOGIN_DIRECT_ADDR ), $validation_object->get_address( LIMIT_LOGIN_PROXY_ADDR ) );
+			$client_type_message = sprintf(
+				__( 'It appears the site is reached through a proxy server (proxy IP: %s, your IP: %s)', 'limit-login-attempts' ),
+				$validation_object->get_address( HM_LIMIT_LOGIN_DIRECT_ADDR ),
+				$validation_object->get_address( HM_LIMIT_LOGIN_PROXY_ADDR )
+			);
 		}
 		$client_type_message .= '<br />';
 
@@ -200,8 +207,8 @@ class Options extends Plugin {
 	 * Make a guess if we are behind a proxy or not
 	 */
 	private function guess_proxy() {
-		return isset( $_SERVER[ LIMIT_LOGIN_PROXY_ADDR ] )
-			? LIMIT_LOGIN_PROXY_ADDR : LIMIT_LOGIN_DIRECT_ADDR;
+		return isset( $_SERVER[ HM_LIMIT_LOGIN_PROXY_ADDR ] )
+			? HM_LIMIT_LOGIN_PROXY_ADDR : HM_LIMIT_LOGIN_DIRECT_ADDR;
 	}
 
 }

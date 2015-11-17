@@ -8,7 +8,7 @@ class Cookies extends Plugin {
 
 	public function load() {
 
-		if ( get_option( 'hn_limiy_login_cookies' ) ) {
+		if ( get_option( 'hn_limit_login_cookies' ) ) {
 
 			$this->handle_cookies();
 

@@ -26,8 +26,8 @@ class Validation extends Plugin {
 		 * Not found. Did we get proxy type from option?
 		 * If so, try to fall back to direct address.
 		 */
-		if ( empty( $type_name ) && $type == LIMIT_LOGIN_PROXY_ADDR
-		     && isset( $_SERVER[ LIMIT_LOGIN_DIRECT_ADDR ] )
+		if ( empty( $type_name ) && $type == HM_LIMIT_LOGIN_PROXY_ADDR
+		     && isset( $_SERVER[ HM_LIMIT_LOGIN_DIRECT_ADDR ] )
 		) {
 			/*
 			 * NOTE: Even though we fall back to direct address -- meaning you
@@ -38,7 +38,7 @@ class Validation extends Plugin {
 			 * regarding which IP should be banned.
 			 */
 
-			return $_SERVER[ LIMIT_LOGIN_DIRECT_ADDR ];
+			return $_SERVER[ HM_LIMIT_LOGIN_DIRECT_ADDR ];
 		}
 
 		return '';
@@ -83,7 +83,7 @@ class Validation extends Plugin {
 		}
 
 		/* lockout active? */
-		$lockouts = get_option( 'limit_login_lockouts' );
+		$lockouts = get_option( 'hm_limit_login_lockouts' );
 
 		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $ip ] ) || time() >= $lockouts[ $ip ] );
 
@@ -97,6 +97,9 @@ class Validation extends Plugin {
 
 		$username = $user->user_login;
 
+		$lockouts = get_option( 'hm_limit_login_lockouts' );
+
+		return false;
 		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $username ] ) || time() >= $lockouts[ $username ] );
 
 	}
@@ -114,7 +117,7 @@ class Validation extends Plugin {
 	 * function my_ip_whitelist($allow, $ip) {
 	 * 	return ($ip == 'my-ip') ? true : $allow;
 	 * }
-	 * add_filter('limit_login_whitelist_ip', 'my_ip_whitelist', 10, 2);
+	 * add_filter('hm_limit_login_whitelist_ip', 'my_ip_whitelist', 10, 2);
 	 */
 	public function is_ip_whitelisted( $ip = null ) {
 		if ( is_null( $ip ) ) {
@@ -128,6 +131,7 @@ class Validation extends Plugin {
 
 	/* Filter: allow login attempt? (called from wp_authenticate()) */
 	public function wp_authenticate_user( $user, $password ) {
+
 		if ( is_wp_error( $user ) || $this->is_ok_to_login( $user ) ) {
 			return $user;
 		}
