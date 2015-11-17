@@ -173,7 +173,7 @@ class Errors extends Plugin {
 	/**
 	 * Add a message to login page when necessary
 	 */
-	private function add_error_message() {
+	public function add_error_message() {
 		global $error, $hm_limit_login_my_error_shown;
 
 		if ( ! $this->should_show_msg() || $hm_limit_login_my_error_shown ) {
