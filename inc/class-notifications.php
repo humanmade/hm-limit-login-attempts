@@ -2,8 +2,6 @@
 
 namespace HM\Limit_Login_Attempts;
 
-use HM\Limit_Login_Attempts\Plugin;
-
 class Notifications extends Plugin {
 
 	public function load() {

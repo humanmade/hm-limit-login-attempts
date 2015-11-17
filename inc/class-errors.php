@@ -11,6 +11,7 @@ class Errors extends Plugin {
 		add_filter( 'shake_error_codes', array( $this, 'failure_shake' ) );
 		add_action( 'login_head', array( $this, 'add_error_message' ) );
 		add_action( 'login_errors', array( $this, 'fixup_error_messages' ) );
+		add_filter( 'authenticate', array( $this, 'track_credentials' ), 1, 3 );
 
 	}
 
@@ -81,13 +82,15 @@ class Errors extends Plugin {
 
 	/* Return current (error) message to show, if any */
 	private function get_message() {
+
+		$validation_object = Validation::get_instance();
+
 		/* Check external whitelist */
-		if ( is_ip_whitelisted() ) {
+		if ( $validation_object->is_ip_whitelisted() ) {
 			return '';
 		}
 
 		/* Is lockout in effect? */
-		$validation_object = Validation::get_instance();
 		if ( ! $validation_object->is_ok_to_login() ) {
 			return $this->_error_msg();
 		}
@@ -97,7 +100,7 @@ class Errors extends Plugin {
 
 
 	/* Should we show errors and messages on this page? */
-	private function should_limit_login_show_msg() {
+	private function should_show_msg() {
 		if ( isset( $_GET['key'] ) ) {
 			/* reset password */
 			return false;
@@ -115,7 +118,7 @@ class Errors extends Plugin {
 	public function fixup_error_messages( $content ) {
 		global $hm_limit_login_just_lockedout, $hm_limit_login_nonempty_credentials, $hm_limit_login_my_error_shown;
 
-		if ( ! $this->should_limit_login_show_msg() ) {
+		if ( ! $this->should_show_msg() ) {
 			return $content;
 		}
 
@@ -194,10 +197,12 @@ class Errors extends Plugin {
 	 * Keep track of if user or password are empty,
 	 * to filter errors correctly
 	 */
-	public function track_credentials( $user, $password ) {
+	public function track_credentials( $user, $username, $password ) {
 		global $hm_limit_login_nonempty_credentials;
 
-		$hm_limit_login_nonempty_credentials = ( ! empty( $user ) && ! empty( $password ) );
+		$hm_limit_login_nonempty_credentials = ( ! empty( $username ) && ! empty( $password ) );
+
+		return $user;
 	}
 
 }

@@ -14,7 +14,7 @@
 				<th scope="row" valign="top"><?php _e( 'Total lockouts', 'limit-login-attempts' ); ?></th>
 				<td>
 					<?php if ( $lockouts_total > 0 ) { ?>
-						<input name="reset_total" value="<?php _e( 'Reset Counter', 'limit-login-attempts' ); ?>" type="submit"/>
+						<input name="reset_total" value="<?php _e( 'Reset Counter', 'limit-login-attempts' ); ?>" type="submit" />
 						<?php echo sprintf( _n( '%d lockout since last reset', '%d lockouts since last reset', $lockouts_total, 'limit-login-attempts' ), $lockouts_total ); ?>
 					<?php } else {
 						_e( 'No lockouts yet', 'limit-login-attempts' );
@@ -27,7 +27,7 @@
 					<td>
 						<input name="reset_current"
 						       value="<?php _e( 'Restore Lockouts', 'limit-login-attempts' ); ?>"
-						       type="submit"/>
+						       type="submit" />
 						<?php echo sprintf( __( '%d IP is currently blocked from trying to log in', 'limit-login-attempts' ), $lockouts_now ); ?>
 					</td>
 				</tr>
@@ -44,21 +44,21 @@
 				<td>
 					<input type="text" size="3" maxlength="4"
 					       value="<?php echo( $allowed_retries ); ?>"
-					       name="allowed_retries"/> <?php _e( 'allowed retries', 'limit-login-attempts' ); ?>
-					<br/>
+					       name="allowed_retries" /> <?php _e( 'allowed retries', 'limit-login-attempts' ); ?>
+					<br />
 					<input type="text" size="3" maxlength="4"
 					       value="<?php echo( $lockout_duration ); ?>"
-					       name="lockout_duration"/> <?php _e( 'minutes lockout', 'limit-login-attempts' ); ?>
-					<br/>
+					       name="lockout_duration" /> <?php _e( 'minutes lockout', 'limit-login-attempts' ); ?>
+					<br />
 					<input type="text" size="3" maxlength="4"
 					       value="<?php echo $allowed_lockouts; ?>"
-					       name="allowed_lockouts"/> <?php _e( 'lockouts increase lockout time to', 'limit-login-attempts' ); ?>
+					       name="allowed_lockouts" /> <?php _e( 'lockouts increase lockout time to', 'limit-login-attempts' ); ?>
 					<input type="text" size="3" maxlength="4"
 					       value="<?php echo( $long_duration ); ?>"
-					       name="long_duration"/> <?php _e( ' hours', 'limit-login-attempts' ); ?> <br/>
+					       name="long_duration" /> <?php _e( ' hours', 'limit-login-attempts' ); ?> <br />
 					<input type="text" size="3" maxlength="4"
 					       value="<?php echo( $valid_duration ); ?>"
-					       name="valid_duration"/> <?php _e( 'hours until retries are reset', 'limit-login-attempts' ); ?>
+					       name="valid_duration" /> <?php _e( 'hours until retries are reset', 'limit-login-attempts' ); ?>
 				</td>
 			</tr>
 			<tr>
@@ -67,12 +67,12 @@
 					<?php echo $client_type_message; ?>
 					<label>
 						<input type="radio" name="client_type"
-							<?php echo $client_type_direct; ?> value="<?php echo HM_LIMIT_LOGIN_DIRECT_ADDR; ?>"/>
+							<?php echo $client_type_direct; ?> value="<?php echo HM_LIMIT_LOGIN_DIRECT_ADDR; ?>" />
 						<?php _e( 'Direct connection', 'limit-login-attempts' ); ?>
 					</label>
 					<label>
 						<input type="radio" name="client_type"
-							<?php echo $client_type_proxy; ?> value="<?php echo HM_LIMIT_LOGIN_PROXY_ADDR; ?>"/>
+							<?php echo $client_type_proxy; ?> value="<?php echo HM_LIMIT_LOGIN_PROXY_ADDR; ?>" />
 						<?php _e( 'From behind a reversy proxy', 'limit-login-attempts' ); ?>
 					</label>
 					<?php echo $client_type_warning; ?>
@@ -82,38 +82,40 @@
 				<th scope="row" valign="top"><?php _e( 'Handle cookie login', 'limit-login-attempts' ); ?></th>
 				<td>
 					<label><input type="radio" name="cookies" <?php echo $cookies_yes; ?>
-					              value="1"/> <?php _e( 'Yes', 'limit-login-attempts' ); ?></label>
+					              value="1" /> <?php _e( 'Yes', 'limit-login-attempts' ); ?></label>
 					<label><input type="radio" name="cookies" <?php echo $cookies_no; ?>
-					              value="0"/> <?php _e( 'No', 'limit-login-attempts' ); ?></label>
+					              value="0" /> <?php _e( 'No', 'limit-login-attempts' ); ?></label>
 				</td>
 			</tr>
 			<tr>
 				<th scope="row" valign="top"><?php _e( 'Notify on lockout', 'limit-login-attempts' ); ?></th>
 				<td>
 					<input type="checkbox" name="lockout_notify_log" <?php echo $log_checked; ?>
-					       value="log"/> <?php _e( 'Log IP', 'limit-login-attempts' ); ?><br/>
+					       value="log" /> <?php _e( 'Log IP', 'limit-login-attempts' ); ?><br />
 					<input type="checkbox" name="lockout_notify_email" <?php echo $email_checked; ?>
-					       value="email"/> <?php _e( 'Email to admin after', 'limit-login-attempts' ); ?>
+					       value="email" /> <?php _e( 'Email to admin after', 'limit-login-attempts' ); ?>
 					<input type="text" size="3" maxlength="4"
 					       value="<?php echo $notify_email_after; ?>"
-					       name="email_after"/> <?php _e( 'lockouts', 'limit-login-attempts' ); ?>
+					       name="email_after" /> <?php _e( 'lockouts', 'limit-login-attempts' ); ?>
 				</td>
 			</tr>
 			<tr>
 				<th scope="row" valign="top"><?php _e( 'Lockout Method', 'limit-login-attempts' ); ?></th>
 				<td>
-					<p></p><?php _e( 'Please select a lockout method. If non are selected, the default method: IP, will be selected.' ); ?></p>
-					<input type="checkbox" name="lockout_method_ip" <?php echo $lockout_method_ip; ?>
-					       value="ip"/> <?php _e( 'Lock users out based on IP', 'limit-login-attempts' ); ?><br/>
-					<input type="checkbox" name="lockout_method_username" <?php echo $lockout_method_username; ?>
-					       value="username"/> <?php _e( 'Lock users out based on username', 'limit-login-attempts' ); ?>
+					<p><?php _e( 'Please select a lockout method. If non are selected, the default method: IP, will be selected.' ); ?></p>
+					<label for="lockout_method_ip">
+						<input type="checkbox" id="lockout_method_ip" name="lockout_method_ip" <?php echo $lockout_method_ip; ?>
+						       value="ip" /> <?php _e( 'Lock users out based on IP', 'limit-login-attempts' ); ?>
+					</label>
+					<br />
+					<label for="lockout_method_username">
+						<input type="checkbox" id="lockout_method_username" name="lockout_method_username" <?php echo $lockout_method_username; ?>
+						       value="username" /> <?php _e( 'Lock users out based on username', 'limit-login-attempts' ); ?>
+					</label>
 				</td>
 			</tr>
 		</table>
-		<p class="submit">
-			<input name="update_options" value="<?php _e( 'Change Options', 'limit-login-attempts' ); ?>"
-			       type="submit"/>
-		</p>
+		<?php submit_button( __( 'Change Options', 'limit-login-attempts' ), 'primary', 'update_options' ); ?>
 	</form>
 	<?php
 	$log = get_option( 'hm_limit_login_logged' );
@@ -123,12 +125,9 @@
 		<h3><?php _e( 'Lockout log', 'limit-login-attempts' ); ?></h3>
 		<form action="options-general.php?page=hm-limit-login-attempts" method="post">
 			<?php wp_nonce_field( 'hm-limit-login-attempts-options' ); ?>
-			<input type="hidden" value="true" name="clear_log"/>
+			<input type="hidden" value="true" name="clear_log" />
 
-			<p class="submit">
-				<input name="submit" value="<?php _e( 'Clear Log', 'limit-login-attempts' ); ?>"
-				       type="submit"/>
-			</p>
+			<?php submit_button( __( 'Clear Log', 'limit-login-attempts' ), 'secondary' ); ?>
 		</form>
 		<style type="text/css" media="screen">
 			.limit-login-log th {
@@ -140,7 +139,7 @@
 			}
 
 			td.limit-login-ip {
-				font-family: "Courier New", Courier, monospace;
+				font-family:    "Courier New", Courier, monospace;
 				vertical-align: top;
 			}
 

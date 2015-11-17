@@ -2,8 +2,6 @@
 
 namespace HM\Limit_Login_Attempts;
 
-use HM\Limit_Login_Attempts\Plugin;
-
 class Setup extends Plugin {
 
 	/* Get options and setup filters & actions */
@@ -15,7 +13,7 @@ class Setup extends Plugin {
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-validation.php' );
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-notifications.php' );
 
-		if( HM_LIMIT_LOGIN_VERSION !== get_option( 'hm_limit_login_version' ) ){
+		if( HM_LIMIT_LOGIN_VERSION !== get_option( 'hm_limit_login_version' ) ) {
 			$this->set_default_variables();
 		}
 
@@ -31,13 +29,6 @@ class Setup extends Plugin {
 		Validation::get_instance();
 		Notifications::get_instance();
 
-
-		/*
-		 * This action should really be changed to the 'authenticate' filter as
-		 * it will probably be deprecated. That is however only available in
-		 * later versions of WP.
-		 */
-		add_action( 'wp_authenticate', array( 'Errors', 'track_credentials' ), 10, 2 );
 	}
 
 	/**

@@ -2,8 +2,6 @@
 
 namespace HM\Limit_Login_Attempts;
 
-use HM\Limit_Login_Attempts\Plugin;
-
 class Cookies extends Plugin {
 
 	public function load() {
@@ -26,7 +24,8 @@ class Cookies extends Plugin {
 	 * auth cookies while locked out.
 	 */
 	private function handle_cookies() {
-		if ( Validation::is_ok_to_login() ) {
+		$validation_object = Validation::get_instance();
+		if ( $validation_object->is_ok_to_login() ) {
 			return;
 		}
 
@@ -51,7 +50,7 @@ class Cookies extends Plugin {
 	 *
 	 * Requires WordPress version 3.0.0, previous versions use limit_login_failed_cookie()
 	 */
-	private function failed_cookie_hash( $cookie_elements ) {
+	public function failed_cookie_hash( $cookie_elements ) {
 		$this->clear_auth_cookie();
 
 		/*
@@ -105,7 +104,7 @@ class Cookies extends Plugin {
 	 *
 	 * Requires WordPress version 3.0.0, not used in previous versions
 	 */
-	private function valid_cookie( $cookie_elements, $user ) {
+	public function valid_cookie( $cookie_elements, $user ) {
 		/*
 		 * As all meta values get cached on user load this should not require
 		 * any extra work for the common case of no stored value.
@@ -116,7 +115,7 @@ class Cookies extends Plugin {
 		}
 	}
 
-	/*
+	/**
 	 * Action when login attempt failed
 	 *
 	 * Increase nr of retries (if necessary). Reset valid value. Setup
@@ -125,7 +124,7 @@ class Cookies extends Plugin {
 	 * A note on external whitelist: retries and statistics are still counted and
 	 * notifications done as usual, but no lockout is done.
 	 */
-	function failed( $username ) {
+	public function failed( $username ) {
 
 		$validation_object = Validation::get_instance();
 
@@ -137,7 +136,7 @@ class Cookies extends Plugin {
 
 		$lockout_method = $validation_object->get_lockout_method();
 
-		if( $lockout_method['ip'] ) {
+		if ( $lockout_method['ip'] ) {
 
 			$ip = $validation_object->get_address();
 			if ( isset( $lockouts[ $ip ] ) && time() < $lockouts[ $ip ] ) {
@@ -148,7 +147,7 @@ class Cookies extends Plugin {
 
 		}
 
-		if( $lockout_method['username'] ) {
+		if ( $lockout_method['username'] ) {
 
 			if ( isset( $lockouts[ $username ] ) && time() < $lockouts[ $username ] ) {
 				return;
@@ -181,7 +180,8 @@ class Cookies extends Plugin {
 
 		/* lockout? */
 		if ( $retries[ $lockout_item ] %  absint( get_option( 'hm_limit_login_allowed_retries' ) )  != 0 ) {
-			/*
+
+			/**
 			 * Not lockout (yet!)
 			 * Do housecleaning (which also saves retry/valid values).
 			 */
@@ -197,7 +197,7 @@ class Cookies extends Plugin {
 
 		$whitelisted = false;
 
-		if( $lockout_method['ip'] ) {
+		if ( $lockout_method['ip'] ) {
 
 			$whitelisted = $validation_object->is_ip_whitelisted( $lockout_item );
 

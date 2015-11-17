@@ -2,15 +2,18 @@
 
 namespace HM\Limit_Login_Attempts;
 
-use HM\Limit_Login_Attempts\Plugin;
-
 class Validation extends Plugin {
 
 	public function load() {
-		add_filter( 'wp_authenticate_user', array( $this, 'wp_authenticate_user' ), 99999, 2 );
+		add_filter( 'authenticate', array( $this, 'authenticate' ), 99999, 3 );
 	}
 
-	/* Get correct remote address */
+	/**
+	 * Get correct remote address
+	 *
+	 * @param string $type_name
+	 * @return string
+	 */
 	public function get_address( $type_name = '' ) {
 		$type = $type_name;
 
@@ -44,7 +47,12 @@ class Validation extends Plugin {
 		return '';
 	}
 
-	public function get_lockout_method( ) {
+	/**
+	 * Return an array of lockout methods to try
+	 *
+	 * @return array
+	 */
+	public function get_lockout_method() {
 		$saved_lockout_method = explode( ',', get_option( 'hm_limit_login_lockout_method' ) );
 		$lockout_method = array();
 		$lockout_method['ip'] = in_array( 'ip', $saved_lockout_method ) ? true : false ;
@@ -54,20 +62,25 @@ class Validation extends Plugin {
 
 	}
 
-	/* Check if it is ok to login */
-	public function is_ok_to_login( $user ) {
+	/**
+	 * Check if it is ok to login
+	 *
+	 * @param string|bool $username
+	 * @return bool
+	 */
+	public function is_ok_to_login( $username = false ) {
 
 		$lockout_method = $this->get_lockout_method();
 
 		$ip_result = false;
 		$username_result = true;
 
-		if( $lockout_method['ip'] ){
+		if ( $lockout_method['ip'] ) {
 			$ip_result = $this->validate_ip_login();
 		}
 
-		if( $lockout_method['username'] ) {
-			$username_result = $this->validate_username_login( $user );
+		if ( $lockout_method['username'] && $username ) {
+			$username_result = $this->validate_username_login( $username );
 		}
 
 		return ( $ip_result || $username_result );
@@ -89,22 +102,24 @@ class Validation extends Plugin {
 
 	}
 
-	private function validate_username_login($user) {
+	/**
+	 * Check username isn't in block list
+	 *
+	 * @param string|bool $username
+	 * @return bool
+	 */
+	private function validate_username_login( $username = false ) {
 
-		if( empty( $user ) ){
+		if ( ! $username ) {
 			return false;
 		}
 
-		$username = $user->user_login;
-
 		$lockouts = get_option( 'hm_limit_login_lockouts' );
 
-		return false;
 		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $username ] ) || time() >= $lockouts[ $username ] );
-
 	}
 
-	/*
+	/**
 	 * Check if IP is whitelisted.
 	 *
 	 * This function allow external ip whitelisting using a filter. Note that it can
@@ -118,6 +133,9 @@ class Validation extends Plugin {
 	 * 	return ($ip == 'my-ip') ? true : $allow;
 	 * }
 	 * add_filter('hm_limit_login_whitelist_ip', 'my_ip_whitelist', 10, 2);
+	 *
+	 * @param null|string $ip
+	 * @return bool
 	 */
 	public function is_ip_whitelisted( $ip = null ) {
 		if ( is_null( $ip ) ) {
@@ -129,10 +147,17 @@ class Validation extends Plugin {
 	}
 
 
-	/* Filter: allow login attempt? (called from wp_authenticate()) */
-	public function wp_authenticate_user( $user, $password ) {
+	/**
+	 * Filter: allow login attempt? (called from wp_authenticate())
+	 *
+	 * @param \WP_User|\WP_Error $user
+	 * @param string $username
+	 * @param string $password
+	 * @return \WP_User|\WP_Error
+	 */
+	public function authenticate( $user, $username, $password ) {
 
-		if ( is_wp_error( $user ) || $this->is_ok_to_login( $user ) ) {
+		if ( $this->is_ok_to_login( $username ) ) {
 			return $user;
 		}
 
