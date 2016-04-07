@@ -6,6 +6,20 @@ use HM\Limit_Login_Attempts\Plugin;
 
 class Errors extends Plugin {
 
+	/**
+	 * Track username during login
+	 *
+	 * @var string|null
+	 */
+	private $username;
+
+	/**
+	 * Track password during login
+	 *
+	 * @var string|null
+	 */
+	private $password;
+
 	public function load() {
 
 		add_filter( 'shake_error_codes', array( $this, 'failure_shake' ) );
@@ -116,7 +130,7 @@ class Errors extends Plugin {
 
 	/* Fix up the error message before showing it */
 	public function fixup_error_messages( $content ) {
-		global $hm_limit_login_just_lockedout, $hm_limit_login_nonempty_credentials, $hm_limit_login_my_error_shown;
+		global $hm_limit_login_just_lockedout, $hm_limit_login_my_error_shown;
 
 		if ( ! $this->should_show_msg() ) {
 			return $content;
@@ -149,7 +163,7 @@ class Errors extends Plugin {
 		$count         = count( $msgs );
 		$my_warn_count = $hm_limit_login_my_error_shown ? 1 : 0;
 
-		if ( $hm_limit_login_nonempty_credentials && $count > $my_warn_count ) {
+		if ( ! empty( $this->username ) && ! empty( $this->password ) && $count > $my_warn_count ) {
 			/* Replace error message, including ours if necessary */
 			$content = __( '<strong>ERROR</strong>: Incorrect username or password.', 'limit-login-attempts' ) . "<br />\n";
 			if ( $hm_limit_login_my_error_shown ) {
@@ -198,9 +212,9 @@ class Errors extends Plugin {
 	 * to filter errors correctly
 	 */
 	public function track_credentials( $user, $username, $password ) {
-		global $hm_limit_login_nonempty_credentials;
 
-		$hm_limit_login_nonempty_credentials = ( ! empty( $username ) && ! empty( $password ) );
+		$this->username = $username;
+		$this->password = $password;
 
 		return $user;
 	}
