@@ -4,8 +4,49 @@ namespace HM\Limit_Login_Attempts;
 
 class Validation extends Plugin {
 
+	/**
+	 * Track username during login
+	 *
+	 * @var string|null
+	 */
+	private $username;
+
+	/**
+	 * Track password during login
+	 *
+	 * @var string|null
+	 */
+	private $password;
+
+	/**
+	 * Has the user only just been locked out
+	 *
+	 * @var bool
+	 */
+	private $just_locked_out = false;
+
+
 	public function load() {
+		add_filter( 'authenticate', array( $this, 'track_credentials' ), -10, 3 );
 		add_filter( 'authenticate', array( $this, 'authenticate' ), 99999, 3 );
+	}
+
+	/**
+	 * Return the username from the authentication step
+	 *
+	 * @return null|string
+	 */
+	public function get_username() {
+		return $this->username;
+	}
+
+	/**
+	 * Check if the password is empty or not, do not pass the value
+	 *
+	 * @return bool
+	 */
+	public function has_password() {
+		return ! empty( $this->password );
 	}
 
 	/**
@@ -30,7 +71,7 @@ class Validation extends Plugin {
 		 * If so, try to fall back to direct address.
 		 */
 		if ( empty( $type_name ) && $type == HM_LIMIT_LOGIN_PROXY_ADDR
-		     && isset( $_SERVER[ HM_LIMIT_LOGIN_DIRECT_ADDR ] )
+			&& isset( $_SERVER[ HM_LIMIT_LOGIN_DIRECT_ADDR ] )
 		) {
 			/*
 			 * NOTE: Even though we fall back to direct address -- meaning you
@@ -53,9 +94,9 @@ class Validation extends Plugin {
 	 * @return array
 	 */
 	public function get_lockout_method() {
-		$saved_lockout_method = explode( ',', get_option( 'hm_limit_login_lockout_method' ) );
-		$lockout_method = array();
-		$lockout_method['ip'] = in_array( 'ip', $saved_lockout_method ) ? true : false ;
+		$saved_lockout_method       = explode( ',', get_option( 'hm_limit_login_lockout_method' ) );
+		$lockout_method             = array();
+		$lockout_method['ip']       = in_array( 'ip', $saved_lockout_method ) ? true : false;
 		$lockout_method['username'] = in_array( 'username', $saved_lockout_method ) ? true : false;
 
 		return $lockout_method;
@@ -65,25 +106,24 @@ class Validation extends Plugin {
 	/**
 	 * Check if it is ok to login
 	 *
-	 * @param string|bool $username
 	 * @return bool
 	 */
-	public function is_ok_to_login( $username = false ) {
+	public function is_ok_to_login() {
 
 		$lockout_method = $this->get_lockout_method();
 
-		$ip_result = false;
-		$username_result = true;
+		$username_result = false; // Username check will set this to false if it fails
+		$ip_result       = true;
+
+		if ( $lockout_method['username'] ) {
+			$username_result = $this->validate_username_login();
+		}
 
 		if ( $lockout_method['ip'] ) {
 			$ip_result = $this->validate_ip_login();
 		}
 
-		if ( $lockout_method['username'] && $username ) {
-			$username_result = $this->validate_username_login( $username );
-		}
-
-		return ( $ip_result || $username_result );
+		return ( $ip_result && $username_result );
 	}
 
 	private function validate_ip_login() {
@@ -105,14 +145,11 @@ class Validation extends Plugin {
 	/**
 	 * Check username isn't in block list
 	 *
-	 * @param string|bool $username
 	 * @return bool
 	 */
-	private function validate_username_login( $username = false ) {
+	private function validate_username_login() {
 
-		if ( ! $username ) {
-			return false;
-		}
+		$username = $this->get_username();
 
 		$lockouts = get_option( 'hm_limit_login_lockouts' );
 
@@ -130,7 +167,7 @@ class Validation extends Plugin {
 	 *
 	 * Example:
 	 * function my_ip_whitelist($allow, $ip) {
-	 * 	return ($ip == 'my-ip') ? true : $allow;
+	 *    return ($ip == 'my-ip') ? true : $allow;
 	 * }
 	 * add_filter('hm_limit_login_whitelist_ip', 'my_ip_whitelist', 10, 2);
 	 *
@@ -146,30 +183,56 @@ class Validation extends Plugin {
 		return ( $whitelisted === true );
 	}
 
-
 	/**
 	 * Filter: allow login attempt? (called from wp_authenticate())
 	 *
 	 * @param \WP_User|\WP_Error $user
-	 * @param string $username
-	 * @param string $password
+	 * @param string             $username
+	 * @param string             $password
 	 * @return \WP_User|\WP_Error
 	 */
 	public function authenticate( $user, $username, $password ) {
 
-		if ( $this->is_ok_to_login( $username ) ) {
+		if ( $this->is_ok_to_login() ) {
 			return $user;
 		}
-
-		global $limit_login_my_error_shown;
-		$limit_login_my_error_shown = true;
 
 		$error = new \WP_Error();
 		// This error should be the same as in "shake it" filter below
 		$errors_object = Errors::get_instance();
+		$errors_object->show_error();
 		$error->add( 'too_many_retries', $errors_object->error_msg() );
 
 		return $error;
+	}
+
+	/**
+	 * Set the passed in credentials early.
+	 *
+	 * @param $user
+	 * @param $username
+	 * @param $password
+	 */
+	public function track_credentials( $user, $username, $password ) {
+
+		$this->username = $username;
+		$this->password = $password;
+
+		return $user;
+	}
+
+	/**
+	 * Lockout the user immediately.
+	 */
+	public function lockout() {
+		$this->just_locked_out = true;
+	}
+
+	/**
+	 * Get the lockout status.
+	 */
+	public function just_locked_out() {
+		return $this->just_locked_out;
 	}
 
 }

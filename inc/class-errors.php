@@ -7,25 +7,17 @@ use HM\Limit_Login_Attempts\Plugin;
 class Errors extends Plugin {
 
 	/**
-	 * Track username during login
+	 * Whether to show the user's error
 	 *
-	 * @var string|null
+	 * @var
 	 */
-	private $username;
-
-	/**
-	 * Track password during login
-	 *
-	 * @var string|null
-	 */
-	private $password;
+	private $error_shown;
 
 	public function load() {
 
 		add_filter( 'shake_error_codes', array( $this, 'failure_shake' ) );
 		add_action( 'login_head', array( $this, 'add_error_message' ) );
 		add_action( 'login_errors', array( $this, 'fixup_error_messages' ) );
-		add_filter( 'authenticate', array( $this, 'track_credentials' ), 1, 3 );
 
 	}
 
@@ -34,19 +26,30 @@ class Errors extends Plugin {
 	public function error_msg() {
 
 		$validation_object = Validation::get_instance();
-		$ip       = $validation_object->get_address();
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
+		$ip                = $validation_object->get_address();
+		$username          = $validation_object->get_username();
+		$lockouts          = get_option( 'hm_limit_login_lockouts' );
 
 		$msg = __( '<strong>ERROR</strong>: Too many failed login attempts.', 'limit-login-attempts' ) . ' ';
 
-		if ( ! is_array( $lockouts ) || ! isset( $lockouts[ $ip ] ) || time() >= $lockouts[ $ip ] ) {
+		if (
+			( ! is_array( $lockouts ) || ! isset( $lockouts[ $username ] ) || time() >= $lockouts[ $username ] )
+			&&
+			( ! is_array( $lockouts ) || ! isset( $lockouts[ $ip ] ) || time() >= $lockouts[ $ip ] )
+		) {
 			/* Huh? No timeout active? */
 			$msg .= __( 'Please try again later.', 'limit-login-attempts' );
 
 			return $msg;
 		}
 
-		$when = ceil( ( $lockouts[ $ip ] - time() ) / 60 );
+		if ( isset( $lockouts[ $username ] ) ) {
+			$lockout_item = $username;
+		} else {
+			$lockout_item = $ip;
+		}
+
+		$when = ceil( ( $lockouts[ $lockout_item ] - time() ) / 60 );
 		if ( $when > 60 ) {
 			$when = ceil( $when / 60 );
 			$msg .= sprintf( _n( 'Please try again in %d hour.', 'Please try again in %d hours.', $when, 'limit-login-attempts' ), $when );
@@ -68,10 +71,11 @@ class Errors extends Plugin {
 	private function retries_remaining_msg() {
 
 		$validation_object = Validation::get_instance();
-		$ip      = $validation_object->get_address();
-		$retries = get_option( 'hm_limit_login_retries' );
-		$valid   = get_option( 'hm_limit_login_retries_valid' );
-		$allowed_retries = get_option( 'hm_limit_login_allowed_retries' );
+		$ip                = $validation_object->get_address();
+		$username          = $validation_object->get_username();
+		$retries           = get_option( 'hm_limit_login_retries' );
+		$valid             = get_option( 'hm_limit_login_retries_valid' );
+		$allowed_retries   = get_option( 'hm_limit_login_allowed_retries' );
 
 		/* Should we show retries remaining? */
 
@@ -79,20 +83,37 @@ class Errors extends Plugin {
 			/* no retries at all */
 			return '';
 		}
-		if ( ! isset( $retries[ $ip ] ) || ! isset( $valid[ $ip ] ) || time() > $valid[ $ip ] ) {
+		if (
+			( ! isset( $retries[ $username ] ) || ! isset( $valid[ $username ] ) || time() > $valid[ $username ] )
+			&&
+			( ! isset( $retries[ $ip ] ) || ! isset( $valid[ $ip ] ) || time() > $valid[ $ip ] )
+		) {
 			/* no: no valid retries */
 			return '';
 		}
-		if ( ( $retries[ $ip ] % $allowed_retries ) == 0 ) {
+
+		if ( isset( $retries[ $username ] ) ) {
+			$lockout_item = $username;
+		} else {
+			$lockout_item = $ip;
+		}
+
+		if ( 0 === ( $retries[ $lockout_item ] % $allowed_retries ) ) {
 			/* no: already been locked out for these retries */
 			return '';
 		}
 
-		$remaining = max( ( $allowed_retries - ( $retries[ $ip ] % $allowed_retries ) ), 0 );
+		$remaining = max( ( $allowed_retries - ( $retries[ $lockout_item ] % $allowed_retries ) ), 0 );
 
 		return sprintf( _n( "<strong>%d</strong> attempt remaining.", "<strong>%d</strong> attempts remaining.", $remaining, 'limit-login-attempts' ), $remaining );
 	}
 
+	/**
+	 * Sets the class variable $this->error_shown to true
+	 */
+	public function show_error() {
+		$this->error_shown = true;
+	}
 
 	/* Return current (error) message to show, if any */
 	private function get_message() {
@@ -106,7 +127,7 @@ class Errors extends Plugin {
 
 		/* Is lockout in effect? */
 		if ( ! $validation_object->is_ok_to_login() ) {
-			return $this->_error_msg();
+			return $this->error_msg();
 		}
 
 		return $this->retries_remaining_msg();
@@ -123,14 +144,13 @@ class Errors extends Plugin {
 		$action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : '';
 
 		return ( $action != 'lostpassword' && $action != 'retrievepassword'
-		         && $action != 'resetpass' && $action != 'rp'
-		         && $action != 'register' );
+			&& $action != 'resetpass' && $action != 'rp'
+			&& $action != 'register' );
 	}
 
 
 	/* Fix up the error message before showing it */
 	public function fixup_error_messages( $content ) {
-		global $hm_limit_login_just_lockedout, $hm_limit_login_my_error_shown;
 
 		if ( ! $this->should_show_msg() ) {
 			return $content;
@@ -141,7 +161,7 @@ class Errors extends Plugin {
 		 * unknown user or empty password).
 		 */
 		$validation_object = Validation::get_instance();
-		if ( ! $validation_object->is_ok_to_login() && ! $hm_limit_login_just_lockedout ) {
+		if ( ! $validation_object->is_ok_to_login() && ! $validation_object->just_locked_out() ) {
 			return $this->error_msg();
 		}
 
@@ -161,12 +181,12 @@ class Errors extends Plugin {
 		}
 
 		$count         = count( $msgs );
-		$my_warn_count = $hm_limit_login_my_error_shown ? 1 : 0;
+		$my_warn_count = $this->error_shown ? 1 : 0;
 
-		if ( ! empty( $this->username ) && ! empty( $this->password ) && $count > $my_warn_count ) {
+		if ( ! empty( $validation_object->get_username() ) && $validation_object->has_password() && $count > $my_warn_count ) {
 			/* Replace error message, including ours if necessary */
 			$content = __( '<strong>ERROR</strong>: Incorrect username or password.', 'limit-login-attempts' ) . "<br />\n";
-			if ( $hm_limit_login_my_error_shown ) {
+			if ( $this->error_shown ) {
 				$content .= "<br />\n" . $this->get_message() . "<br />\n";
 			}
 
@@ -176,7 +196,7 @@ class Errors extends Plugin {
 		}
 
 		$new = '';
-		while ( $count -- > 0 ) {
+		while ( $count-- > 0 ) {
 			$new .= array_shift( $msgs ) . "<br />\n";
 			if ( $count > 0 ) {
 				$new .= "<br />\n";
@@ -191,32 +211,20 @@ class Errors extends Plugin {
 	 * Add a message to login page when necessary
 	 */
 	public function add_error_message() {
-		global $error, $hm_limit_login_my_error_shown;
+		global $error;
 
-		if ( ! $this->should_show_msg() || $hm_limit_login_my_error_shown ) {
+		if ( ! $this->should_show_msg() || $this->error_shown ) {
 			return;
 		}
 
 		$msg = $this->get_message();
 
 		if ( $msg != '' ) {
-			$hm_limit_login_my_error_shown = true;
+			$this->error_shown = true;
 			$error .= $msg;
 		}
 
 		return;
-	}
-
-	/**
-	 * Keep track of if user or password are empty,
-	 * to filter errors correctly
-	 */
-	public function track_credentials( $user, $username, $password ) {
-
-		$this->username = $username;
-		$this->password = $password;
-
-		return $user;
 	}
 
 }

@@ -6,7 +6,7 @@ class Cookies extends Plugin {
 
 	public function load() {
 
-		if ( get_option( 'hn_limit_login_cookies' ) ) {
+		if ( get_option( 'hm_limit_login_cookies' ) ) {
 
 			$this->handle_cookies();
 
@@ -32,8 +32,12 @@ class Cookies extends Plugin {
 		$this->clear_auth_cookie();
 	}
 
-	/* Action: failed cookie login (calls limit_login_failed()) */
-	private function failed_cookie( $cookie_elements ) {
+	/**
+	 * Action: failed cookie login (calls limit_login_failed())
+	 * 
+	 * @param $cookie_elements
+	 */
+	public function failed_cookie( $cookie_elements ) {
 		$this->clear_auth_cookie();
 
 		/*
@@ -43,12 +47,14 @@ class Cookies extends Plugin {
 		$this->failed( $cookie_elements['username'] );
 	}
 
-	/*
+	/**
 	 * Action: failed cookie login hash
 	 *
 	 * Make sure same invalid cookie doesn't get counted more than once.
 	 *
 	 * Requires WordPress version 3.0.0, previous versions use limit_login_failed_cookie()
+	 * 
+	 * @param $cookie_elements
 	 */
 	public function failed_cookie_hash( $cookie_elements ) {
 		$this->clear_auth_cookie();
@@ -171,7 +177,7 @@ class Cookies extends Plugin {
 
 		/* Check validity and add one to retries */
 		if ( isset( $retries[ $lockout_item ] ) && isset( $valid[ $lockout_item ] ) && time() < $valid[ $lockout_item ] ) {
-			$retries[ $ip ] ++;
+			$retries[ $lockout_item ]++;
 		} else {
 			$retries[ $lockout_item ] = 1;
 		}
@@ -179,7 +185,7 @@ class Cookies extends Plugin {
 		$valid[ $lockout_item ] = time() + absint( get_option( 'hm_limit_login_valid_duration' ) );
 
 		/* lockout? */
-		if ( $retries[ $lockout_item ] %  absint( get_option( 'hm_limit_login_allowed_retries' ) )  != 0 ) {
+		if ( 0 !== $retries[ $lockout_item ] % absint( get_option( 'hm_limit_login_allowed_retries' ) ) ) {
 
 			/**
 			 * Not lockout (yet!)
@@ -193,7 +199,7 @@ class Cookies extends Plugin {
 		/* lockout! */
 
 		$retries_long = get_option( 'hm_limit_login_allowed_retries' )
-		                * get_option( 'hm_limit_login_allowed_lockouts' );
+			* get_option( 'hm_limit_login_allowed_lockouts' );
 
 		$whitelisted = false;
 
@@ -214,9 +220,8 @@ class Cookies extends Plugin {
 
 		}
 
-		if( !$whitelisted ) {
-			global $limit_login_just_lockedout;
-			$limit_login_just_lockedout = true;
+		if ( ! $whitelisted ) {
+			$validation_object->lockout();
 
 			/* setup lockout, reset retries as needed */
 			if ( $retries[ $lockout_item ] >= $retries_long ) {

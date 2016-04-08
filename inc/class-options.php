@@ -28,7 +28,7 @@ class Options extends Plugin {
 	/**
 	 * Show log on admin page
 	 */
-	private function show_log( $log ) {
+	public function show_log( $log ) {
 
 		if ( ! is_array( $log ) || count( $log ) == 0 ) {
 			return;
