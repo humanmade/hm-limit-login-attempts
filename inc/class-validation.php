@@ -112,8 +112,8 @@ class Validation extends Plugin {
 
 		$lockout_method = $this->get_lockout_method();
 
-		$username_result = false; // Username check will set this to false if it fails
-		$ip_result       = true;
+		$username_result = false;
+		$ip_result       = false;
 
 		if ( $lockout_method['username'] ) {
 			$username_result = $this->validate_username_login();
@@ -135,7 +135,6 @@ class Validation extends Plugin {
 			return true;
 		}
 
-		/* lockout active? */
 		$lockouts = get_option( 'hm_limit_login_lockouts' );
 
 		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $ip ] ) || time() >= $lockouts[ $ip ] );

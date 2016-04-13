@@ -186,7 +186,7 @@ class Options extends Plugin {
 		if ( $client_type != $client_type_guess ) {
 
 			$faq = 'http://wordpress.org/extend/plugins/limit-login-attempts/faq/';
-			$client_type_warning = '<br /><br />' . sprintf( __( '<strong>Current setting appears to be invalid</strong>. Please make sure it is correct. Further information can be found <a href="%s" title="FAQ">here</a>', 'limit-login-attempts' ), $faq );
+			$client_type_warning = '<p>' . sprintf( __( '<strong>Current setting appears to be invalid</strong>. Please make sure it is correct. Further information can be found <a href="%s" title="FAQ">here</a>', 'limit-login-attempts' ), $faq ) . '</p>';
 
 		}
 

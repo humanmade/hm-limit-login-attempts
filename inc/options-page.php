@@ -64,18 +64,20 @@
 			<tr>
 				<th scope="row" valign="top"><?php esc_html_e( 'Site connection', 'limit-login-attempts' ); ?></th>
 				<td>
-					<?php echo esc_html( $client_type_message ); ?>
-					<label>
-						<input type="radio" name="client_type"
-							<?php echo $client_type_direct; ?> value="<?php echo HM_LIMIT_LOGIN_DIRECT_ADDR; ?>" />
-						<?php esc_html_e( 'Direct connection', 'limit-login-attempts' ); ?>
-					</label>
-					<label>
-						<input type="radio" name="client_type"
-							<?php echo $client_type_proxy; ?> value="<?php echo HM_LIMIT_LOGIN_PROXY_ADDR; ?>" />
-						<?php esc_html_e( 'From behind a reversy proxy', 'limit-login-attempts' ); ?>
-					</label>
-					<?php echo esc_html( $client_type_warning ); ?>
+					<?php echo wp_kses_post( $client_type_message ); ?>
+					<p>
+						<label>
+							<input type="radio" name="client_type"
+								<?php echo sanitize_text_field( $client_type_direct ); ?> value="<?php echo esc_attr( HM_LIMIT_LOGIN_DIRECT_ADDR ); ?>" />
+							<?php esc_html_e( 'Direct connection', 'limit-login-attempts' ); ?>
+						</label>
+						<label>
+							<input type="radio" name="client_type"
+								<?php echo sanitize_text_field( $client_type_proxy ); ?> value="<?php echo esc_attr( HM_LIMIT_LOGIN_PROXY_ADDR ); ?>" />
+							<?php esc_html_e( 'From behind a reverse proxy', 'limit-login-attempts' ); ?>
+						</label>
+					</p>
+					<?php echo wp_kses_post( $client_type_warning ); ?>
 				</td>
 			</tr>
 			<tr>

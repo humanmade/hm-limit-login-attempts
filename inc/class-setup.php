@@ -6,7 +6,7 @@ class Setup extends Plugin {
 
 	/* Get options and setup filters & actions */
 	public function load() {
-
+		
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-options.php' );
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-errors.php' );
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-cookies.php' );
