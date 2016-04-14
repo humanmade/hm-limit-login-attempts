@@ -194,10 +194,10 @@ class Options extends Plugin {
 		$log_checked   = in_array( 'log', $v ) ? ' checked ' : '';
 		$email_checked = in_array( 'email', $v ) ? ' checked ' : '';
 
-		$saved_lockout_method = $validation_object->get_lockout_method();
+		$saved_lockout_methods = $validation_object->get_lockout_methods();
 
-		$lockout_method_ip = $saved_lockout_method['ip'] ? ' checked ' : '';
-		$lockout_method_username = $saved_lockout_method['username'] ? ' checked ' : '';
+		$lockout_method_ip       = checked( 1, $saved_lockout_methods['ip'], false );
+		$lockout_method_username = checked( 1, $saved_lockout_methods['username'], false );
 
 		include( HM_LIMIT_LOGIN_DIR . 'inc/options-page.php' );
 

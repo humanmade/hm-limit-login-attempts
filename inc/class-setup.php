@@ -6,14 +6,14 @@ class Setup extends Plugin {
 
 	/* Get options and setup filters & actions */
 	public function load() {
-		
+
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-options.php' );
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-errors.php' );
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-cookies.php' );
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-validation.php' );
 		require_once( HM_LIMIT_LOGIN_DIR . 'inc/class-notifications.php' );
 
-		if( HM_LIMIT_LOGIN_VERSION !== get_option( 'hm_limit_login_version' ) ) {
+		if ( HM_LIMIT_LOGIN_VERSION !== get_option( 'hm_limit_login_version' ) ) {
 			$this->set_default_variables();
 		}
 

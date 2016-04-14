@@ -93,13 +93,13 @@ class Validation extends Plugin {
 	 *
 	 * @return array
 	 */
-	public function get_lockout_method() {
-		$saved_lockout_method       = explode( ',', get_option( 'hm_limit_login_lockout_method' ) );
-		$lockout_method             = array();
-		$lockout_method['ip']       = in_array( 'ip', $saved_lockout_method ) ? true : false;
-		$lockout_method['username'] = in_array( 'username', $saved_lockout_method ) ? true : false;
+	public function get_lockout_methods() {
+		$saved_lockout_methods       = explode( ',', get_option( 'hm_limit_login_lockout_method' ) );
+		$lockout_methods             = array();
+		$lockout_methods['ip']       = in_array( 'ip', $saved_lockout_methods, true );
+		$lockout_methods['username'] = in_array( 'username', $saved_lockout_methods, true );
 
-		return $lockout_method;
+		return $lockout_methods;
 
 	}
 
@@ -110,7 +110,7 @@ class Validation extends Plugin {
 	 */
 	public function is_ok_to_login() {
 
-		$lockout_method = $this->get_lockout_method();
+		$lockout_method = $this->get_lockout_methods();
 
 		$username_result = false;
 		$ip_result       = false;

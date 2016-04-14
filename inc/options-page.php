@@ -13,25 +13,25 @@
 			<tr>
 				<th scope="row" valign="top"><?php esc_html_e( 'Total lockouts', 'limit-login-attempts' ); ?></th>
 				<td>
-					<?php if ( $lockouts_total > 0 ) { ?>
+					<?php if ( $lockouts_total > 0 ) : ?>
 						<input name="reset_total" value="<?php esc_html_e( 'Reset Counter', 'limit-login-attempts' ); ?>" type="submit" />
-						<?php echo sprintf( _n( '%d lockout since last reset', '%d lockouts since last reset', $lockouts_total, 'limit-login-attempts' ), $lockouts_total ); ?>
-					<?php } else {
-						_e( 'No lockouts yet', 'limit-login-attempts' );
-					} ?>
+						<?php echo esc_html( sprintf( _n( '%d lockout since last reset', '%d lockouts since last reset', $lockouts_total, 'limit-login-attempts' ), $lockouts_total ) ); ?>
+					<?php else : ?>
+						<?php esc_html_e( 'No lockouts yet', 'limit-login-attempts' ); ?>
+					<?php endif; ?>
 				</td>
 			</tr>
-			<?php if ( $lockouts_now > 0 ) { ?>
+			<?php if ( $lockouts_now > 0 ) : ?>
 				<tr>
 					<th scope="row" valign="top"><?php esc_html_e( 'Active lockouts', 'limit-login-attempts' ); ?></th>
 					<td>
 						<input name="reset_current"
-						       value="<?php esc_html_e( 'Restore Lockouts', 'limit-login-attempts' ); ?>"
+						       value="<?php echo esc_attr( esc_html__( 'Restore Lockouts', 'limit-login-attempts' ) ); ?>"
 						       type="submit" />
-						<?php echo sprintf( _n( '%d IP address is currently blocked from trying to log in', '%d IP addresses are currently blocked from trying to log in', 'limit-login-attempts', $lockouts_now ), $lockouts_now ); ?>
+						<?php echo esc_html( sprintf( _n( '%d IP address is currently blocked from trying to log in', '%d IP addresses are currently blocked from trying to log in', 'limit-login-attempts', $lockouts_now ), $lockouts_now ) ); ?>
 					</td>
 				</tr>
-			<?php } ?>
+			<?php endif; ?>
 		</table>
 	</form>
 	<h3><?php esc_html_e( 'Options', 'limit-login-attempts' ); ?></h3>
@@ -64,7 +64,7 @@
 			<tr>
 				<th scope="row" valign="top"><?php esc_html_e( 'Site connection', 'limit-login-attempts' ); ?></th>
 				<td>
-					<?php echo wp_kses_post( $client_type_message ); ?>
+					<?php echo wp_kses( $client_type_message, 'data' ); ?>
 					<p>
 						<label>
 							<input type="radio" name="client_type"
@@ -77,7 +77,7 @@
 							<?php esc_html_e( 'From behind a reverse proxy', 'limit-login-attempts' ); ?>
 						</label>
 					</p>
-					<?php echo wp_kses_post( $client_type_warning ); ?>
+					<?php echo wp_kses( $client_type_warning, 'data' ); ?>
 				</td>
 			</tr>
 			<tr>
@@ -122,8 +122,7 @@
 	<?php
 	$log = get_option( 'hm_limit_login_logged' );
 
-	if ( is_array( $log ) && count( $log ) > 0 ) {
-		?>
+	if ( is_array( $log ) && count( $log ) > 0 ) : ?>
 		<h3><?php esc_html_e( 'Lockout log', 'limit-login-attempts' ); ?></h3>
 		<form action="options-general.php?page=hm-limit-login-attempts" method="post">
 			<?php wp_nonce_field( 'hm-limit-login-attempts-options' ); ?>
@@ -154,8 +153,6 @@
 				<?php $this->show_log( $log ); ?>
 			</table>
 		</div>
-		<?php
-	} /* if showing $log */
-	?>
+	<?php endif; /* if showing $log */ ?>
 
 </div>

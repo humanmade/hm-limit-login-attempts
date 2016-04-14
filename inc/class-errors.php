@@ -196,9 +196,9 @@ class Errors extends Plugin {
 		}
 
 		$new = '';
-		while ( $count-- > 0 ) {
+		for ( $i = $count; $i > 0; $i-- ) {
 			$new .= array_shift( $msgs ) . "<br />\n";
-			if ( $count > 0 ) {
+			if ( $i > 0 ) {
 				$new .= "<br />\n";
 			}
 		}

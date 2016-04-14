@@ -4,6 +4,13 @@ namespace HM\Limit_Login_Attempts;
 
 class Cookies extends Plugin {
 
+	/**
+	 * Track if the user is locked out yet
+	 *
+	 * @var bool
+	 */
+	private $locked_out = false;
+
 	public function load() {
 
 		if ( get_option( 'hm_limit_login_cookies' ) ) {
@@ -35,7 +42,7 @@ class Cookies extends Plugin {
 	/**
 	 * Action: failed cookie login (calls limit_login_failed())
 	 *
-	 * @param $cookie_elements
+	 * @param array $cookie_elements User data extracted from the cookie
 	 */
 	public function failed_cookie( $cookie_elements ) {
 		$this->clear_auth_cookie();
@@ -81,7 +88,7 @@ class Cookies extends Plugin {
 		$user = get_user_by( 'login', $username );
 		if ( ! $user ) {
 			// "shouldn't happen" for this action
-			$this->failed( $username );
+			$this->failed();
 
 			return;
 		}
@@ -132,15 +139,36 @@ class Cookies extends Plugin {
 	 */
 	public function failed() {
 
-		$validation_object = Validation::get_instance();
+		// Get lockouts
+		list( $lockouts, $retries, $valid ) = $this->process_lockouts();
 
-		/* if currently locked-out, do not add to retries */
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
-		if ( ! is_array( $lockouts ) ) {
-			$lockouts = array();
+		// Return early if already locked out or not locked out yet
+		if ( $this->locked_out ) {
+			return;
 		}
 
-		/* Get the arrays with retries and retries-valid information */
+		/* do housecleaning and save values */
+		$this->cleanup( $retries, $lockouts, $valid );
+
+		/* do any notification */
+		$notifcation_object = Notifications::get_instance();
+		$notifcation_object->notify();
+
+		/* increase statistics */
+		$total = get_option( 'hm_limit_login_lockouts_total' );
+		if ( $total === false || ! is_numeric( $total ) ) {
+			add_option( 'hm_limit_login_lockouts_total', 1, '', 'no' );
+		} else {
+			update_option( 'hm_limit_login_lockouts_total', $total + 1 );
+		}
+	}
+
+	/**
+	 * Fetches retries data and sets it up if it doesn't exist yet
+	 *
+	 * @return array
+	 */
+	protected function get_retries_data() {
 		$retries = get_option( 'hm_limit_login_retries' );
 		$valid   = get_option( 'hm_limit_login_retries_valid' );
 		if ( ! is_array( $retries ) ) {
@@ -155,27 +183,53 @@ class Cookies extends Plugin {
 		$retries_long = get_option( 'hm_limit_login_allowed_retries' )
 			* get_option( 'hm_limit_login_allowed_lockouts' );
 
-		// Run through each lockout method
-		$lockout_method = $validation_object->get_lockout_method();
-		$return         = false;
+		return array(
+			'retries'      => $retries,
+			'valid'        => $valid,
+			'retries_long' => $retries_long,
+		);
+	}
 
-		foreach ( $lockout_method as $method => $active ) {
+	/**
+	 * Processes the lockouts array and updates it based on current login attempt
+	 *
+	 * @return array An array of lockout, retries and valid retries
+	 */
+	protected function process_lockouts() {
+
+		$validation_object = Validation::get_instance();
+
+		/* if currently locked-out, do not add to retries */
+		$lockouts = get_option( 'hm_limit_login_lockouts' );
+		if ( ! is_array( $lockouts ) ) {
+			$lockouts = array();
+		}
+
+		/* Get the arrays with retries and retries-valid information */
+		list( $retries, $valid, $retries_long ) = $this->get_retries_data();
+
+		foreach ( $validation_object->get_lockout_methods() as $method => $active ) {
 
 			if ( ! $active ) {
 				continue;
 			}
 
-			if ( 'ip' === $method ) {
-				$lockout_item = $validation_object->get_address();
+			switch ( $method ) {
+				case 'ip':
+					$lockout_item = $validation_object->get_address();
+					break;
+				case 'username':
+					$lockout_item = $validation_object->get_username();
+					break;
 			}
 
-			if ( 'username' === $method ) {
-				$lockout_item = $validation_object->get_username();
+			if ( ! isset( $lockout_item ) ) {
+				continue;
 			}
 
 			// Return if we're currently locked out
 			if ( isset( $lockouts[ $lockout_item ] ) && time() < $lockouts[ $lockout_item ] ) {
-				$return = true;
+				$this->locked_out = true;
 				continue;
 			}
 
@@ -196,7 +250,7 @@ class Cookies extends Plugin {
 				 * Do housecleaning (which also saves retry/valid values).
 				 */
 				$this->cleanup( $retries, null, $valid );
-				$return = true;
+				$this->locked_out = true;
 
 				continue;
 			}
@@ -236,30 +290,15 @@ class Cookies extends Plugin {
 
 		}
 
-		// Return early if already locked out or not locked out yet
-		if ( $return ) {
-			return;
-		}
-
-		/* do housecleaning and save values */
-		$this->cleanup( $retries, $lockouts, $valid );
-
-		/* do any notification */
-		$notifcation_object = Notifications::get_instance();
-		$notifcation_object->notify();
-
-		/* increase statistics */
-		$total = get_option( 'hm_limit_login_lockouts_total' );
-		if ( $total === false || ! is_numeric( $total ) ) {
-			add_option( 'hm_limit_login_lockouts_total', 1, '', 'no' );
-		} else {
-			update_option( 'hm_limit_login_lockouts_total', $total + 1 );
-		}
+		return array(
+			'lockouts' => $lockouts,
+			'retries'  => $retries,
+			'valid'    => $valid,
+		);
 	}
 
-
 	/* Make sure auth cookie really get cleared (for this session too) */
-	private function clear_auth_cookie() {
+	protected function clear_auth_cookie() {
 		wp_clear_auth_cookie();
 
 		if ( ! empty( $_COOKIE[ AUTH_COOKIE ] ) ) {

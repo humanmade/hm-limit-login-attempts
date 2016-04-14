@@ -34,7 +34,7 @@ class Notifications extends Plugin {
 		$ip                = $validation_object->get_address();
 		$username          = $validation_object->get_username();
 		$whitelisted       = $validation_object->is_ip_whitelisted( $ip );
-		$lockout_methods   = $validation_object->get_lockout_method();
+		$lockout_methods   = $validation_object->get_lockout_methods();
 		$blogname          = is_multisite() ? get_site_option( 'site_name' ) : get_option( 'blogname' );
 		$subject           = sprintf( __( "[%s] Too many failed login attempts", 'limit-login-attempts' ), $blogname );
 		$message           = '';
@@ -76,34 +76,34 @@ class Notifications extends Plugin {
 				$when     = sprintf( _n( '%d minute', '%d minutes', $time, 'limit-login-attempts' ), $time );
 			}
 
-			if ( 'ip' === $method ) {
-				if ( $whitelisted ) {
-					$subject = sprintf( __( "[%s] Failed login attempts from whitelisted IP"
-							, 'limit-login-attempts' )
-						, $blogname );
-				}
-			}
+			switch( $method ) {
+				case 'username':
+					$message .= sprintf( __( '%d failed login attempts (%d lockout(s)) from User: %s', 'limit-login-attempts' ) . "\r\n\r\n",
+						$count,
+						$lockouts,
+						$username );
+					break;
+				case 'ip':
+					$message .= sprintf( __( '%d failed login attempts (%d lockout(s)) from IP: %s', 'limit-login-attempts' ) . "\r\n\r\n",
+						$count,
+						$lockouts,
+						$ip );
 
-			if ( 'ip' === $method ) {
-				$message .= sprintf( __( "%d failed login attempts (%d lockout(s)) from IP: %s", 'limit-login-attempts' ) . "\r\n\r\n", $count, $lockouts, $ip );
-			}
-
-			if ( 'username' === $method ) {
-				$message .= sprintf( __( "%d failed login attempts (%d lockout(s)) from User: %s", 'limit-login-attempts' ) . "\r\n\r\n", $count, $lockouts, $username );
-			}
-
-			if ( 'ip' === $method ) {
-				if ( $whitelisted ) {
-					$message .= __( "IP was NOT blocked because of external whitelist.", 'limit-login-attempts' ) . "\r\n\r\n";
-				} else {
-					$message .= sprintf( __( "IP was blocked for %s", 'limit-login-attempts' ) . "\r\n\r\n", $when );
-				}
+					if ( $whitelisted ) {
+						$subject = sprintf( __( '[%s] Failed login attempts from whitelisted IP', 'limit-login-attempts' ),
+							$blogname );
+						$message .= __( 'IP was NOT blocked because of external whitelist.', 'limit-login-attempts' ) . "\r\n\r\n";
+					} else {
+						$message .= sprintf( __( 'IP was blocked for %s', 'limit-login-attempts' ) . "\r\n\r\n",
+							$when );
+					}
+					break;
 			}
 
 		}
 
 		if ( ! empty( $username ) ) {
-			$message .= sprintf( __( "Last user attempted: %s", 'limit-login-attempts' ) . "\r\n\r\n", $username );
+			$message .= sprintf( __( 'Last user attempted: %s', 'limit-login-attempts' ) . "\r\n\r\n", $username );
 		}
 
 		$admin_email = get_site_option( 'admin_email' );
