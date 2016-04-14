@@ -2,13 +2,18 @@
 
 namespace HM\Limit_Login_Attempts;
 
-use HM\Limit_Login_Attempts\Plugin;
-
 class Cookies extends Plugin {
+
+	/**
+	 * Track if the user is locked out yet
+	 *
+	 * @var bool
+	 */
+	private $locked_out = false;
 
 	public function load() {
 
-		if ( get_option( 'hn_limiy_login_cookies' ) ) {
+		if ( get_option( 'hm_limit_login_cookies' ) ) {
 
 			$this->handle_cookies();
 
@@ -26,15 +31,20 @@ class Cookies extends Plugin {
 	 * auth cookies while locked out.
 	 */
 	private function handle_cookies() {
-		if ( Validation::is_ok_to_login() ) {
+		$validation_object = Validation::get_instance();
+		if ( $validation_object->is_ok_to_login() ) {
 			return;
 		}
 
 		$this->clear_auth_cookie();
 	}
 
-	/* Action: failed cookie login (calls limit_login_failed()) */
-	private function failed_cookie( $cookie_elements ) {
+	/**
+	 * Action: failed cookie login (calls limit_login_failed())
+	 *
+	 * @param array $cookie_elements User data extracted from the cookie
+	 */
+	public function failed_cookie( $cookie_elements ) {
 		$this->clear_auth_cookie();
 
 		/*
@@ -44,14 +54,16 @@ class Cookies extends Plugin {
 		$this->failed( $cookie_elements['username'] );
 	}
 
-	/*
+	/**
 	 * Action: failed cookie login hash
 	 *
 	 * Make sure same invalid cookie doesn't get counted more than once.
 	 *
 	 * Requires WordPress version 3.0.0, previous versions use limit_login_failed_cookie()
+	 *
+	 * @param $cookie_elements
 	 */
-	private function failed_cookie_hash( $cookie_elements ) {
+	public function failed_cookie_hash( $cookie_elements ) {
 		$this->clear_auth_cookie();
 
 		/*
@@ -76,7 +88,7 @@ class Cookies extends Plugin {
 		$user = get_user_by( 'login', $username );
 		if ( ! $user ) {
 			// "shouldn't happen" for this action
-			$this->failed( $username );
+			$this->failed();
 
 			return;
 		}
@@ -94,7 +106,7 @@ class Cookies extends Plugin {
 			add_user_meta( $user->ID, 'hm_limit_login_previous_cookie', $cookie_elements, true );
 		}
 
-		$this->failed( $username );
+		$this->failed();
 	}
 
 
@@ -105,7 +117,7 @@ class Cookies extends Plugin {
 	 *
 	 * Requires WordPress version 3.0.0, not used in previous versions
 	 */
-	private function valid_cookie( $cookie_elements, $user ) {
+	public function valid_cookie( $cookie_elements, $user ) {
 		/*
 		 * As all meta values get cached on user load this should not require
 		 * any extra work for the common case of no stored value.
@@ -116,7 +128,7 @@ class Cookies extends Plugin {
 		}
 	}
 
-	/*
+	/**
 	 * Action when login attempt failed
 	 *
 	 * Increase nr of retries (if necessary). Reset valid value. Setup
@@ -125,22 +137,38 @@ class Cookies extends Plugin {
 	 * A note on external whitelist: retries and statistics are still counted and
 	 * notifications done as usual, but no lockout is done.
 	 */
-	function failed( $username ) {
+	public function failed() {
 
-		$validation_object = Validation::get_instance();
+		// Get lockouts
+		list( $lockouts, $retries, $valid ) = $this->process_lockouts();
 
-		$ip = $validation_object->get_address();
-
-		/* if currently locked-out, do not add to retries */
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
-		if ( ! is_array( $lockouts ) ) {
-			$lockouts = array();
-		}
-		if ( isset( $lockouts[ $ip ] ) && time() < $lockouts[ $ip ] ) {
+		// Return early if already locked out or not locked out yet
+		if ( $this->locked_out ) {
 			return;
 		}
 
-		/* Get the arrays with retries and retries-valid information */
+		/* do housecleaning and save values */
+		$this->cleanup( $retries, $lockouts, $valid );
+
+		/* do any notification */
+		$notifcation_object = Notifications::get_instance();
+		$notifcation_object->notify();
+
+		/* increase statistics */
+		$total = get_option( 'hm_limit_login_lockouts_total' );
+		if ( $total === false || ! is_numeric( $total ) ) {
+			add_option( 'hm_limit_login_lockouts_total', 1, '', 'no' );
+		} else {
+			update_option( 'hm_limit_login_lockouts_total', $total + 1 );
+		}
+	}
+
+	/**
+	 * Fetches retries data and sets it up if it doesn't exist yet
+	 *
+	 * @return array
+	 */
+	protected function get_retries_data() {
 		$retries = get_option( 'hm_limit_login_retries' );
 		$valid   = get_option( 'hm_limit_login_retries_valid' );
 		if ( ! is_array( $retries ) ) {
@@ -152,77 +180,125 @@ class Cookies extends Plugin {
 			add_option( 'hm_limit_login_retries_valid', $valid, '', 'no' );
 		}
 
-		/* Check validity and add one to retries */
-		if ( isset( $retries[ $ip ] ) && isset( $valid[ $ip ] ) && time() < $valid[ $ip ] ) {
-			$retries[ $ip ] ++;
-		} else {
-			$retries[ $ip ] = 1;
-		}
-
-		$valid[ $ip ] = time() + absint( get_option( 'hm_limit_login_valid_duration' ) );
-
-		/* lockout? */
-		if ( $retries[ $ip ] %  absint( get_option( 'hm_limit_login_allowed_retries' ) )  != 0 ) {
-			/*
-			 * Not lockout (yet!)
-			 * Do housecleaning (which also saves retry/valid values).
-			 */
-			$this->cleanup( $retries, null, $valid );
-
-			return;
-		}
-
-		/* lockout! */
-
-		$whitelisted = $validation_object->is_ip_whitelisted( $ip );
-
 		$retries_long = get_option( 'hm_limit_login_allowed_retries' )
-		                * get_option( 'hm_limit_login_allowed_lockouts' );
+			* get_option( 'hm_limit_login_allowed_lockouts' );
 
-		/*
-		 * Note that retries and statistics are still counted and notifications
-		 * done as usual for whitelisted ips , but no lockout is done.
-		 */
-		if ( $whitelisted ) {
-			if ( $retries[ $ip ] >= $retries_long ) {
-				unset( $retries[ $ip ] );
-				unset( $valid[ $ip ] );
-			}
-		} else {
-			global $limit_login_just_lockedout;
-			$limit_login_just_lockedout = true;
-
-			/* setup lockout, reset retries as needed */
-			if ( $retries[ $ip ] >= $retries_long ) {
-				/* long lockout */
-				$lockouts[ $ip ] = time() + get_option( 'hm_limit_login_long_duration' );
-				unset( $retries[ $ip ] );
-				unset( $valid[ $ip ] );
-			} else {
-				/* normal lockout */
-				$lockouts[ $ip ] = time() + get_option( 'hm_limit_login_lockout_duration' );
-			}
-		}
-
-		/* do housecleaning and save values */
-		$this->cleanup( $retries, $lockouts, $valid );
-
-		/* do any notification */
-		$notifcation_object = Notifications::get_instance();
-		$notifcation_object->notify( $username );
-
-		/* increase statistics */
-		$total = get_option( 'hm_limit_login_lockouts_total' );
-		if ( $total === false || ! is_numeric( $total ) ) {
-			add_option( 'hm_limit_login_lockouts_total', 1, '', 'no' );
-		} else {
-			update_option( 'hm_limit_login_lockouts_total', $total + 1 );
-		}
+		return array(
+			'retries'      => $retries,
+			'valid'        => $valid,
+			'retries_long' => $retries_long,
+		);
 	}
 
+	/**
+	 * Processes the lockouts array and updates it based on current login attempt
+	 *
+	 * @return array An array of lockout, retries and valid retries
+	 */
+	protected function process_lockouts() {
+
+		$validation_object = Validation::get_instance();
+
+		/* if currently locked-out, do not add to retries */
+		$lockouts = get_option( 'hm_limit_login_lockouts' );
+		if ( ! is_array( $lockouts ) ) {
+			$lockouts = array();
+		}
+
+		/* Get the arrays with retries and retries-valid information */
+		list( $retries, $valid, $retries_long ) = $this->get_retries_data();
+
+		foreach ( $validation_object->get_lockout_methods() as $method => $active ) {
+
+			if ( ! $active ) {
+				continue;
+			}
+
+			switch ( $method ) {
+				case 'ip':
+					$lockout_item = $validation_object->get_address();
+					break;
+				case 'username':
+					$lockout_item = $validation_object->get_username();
+					break;
+			}
+
+			if ( ! isset( $lockout_item ) ) {
+				continue;
+			}
+
+			// Return if we're currently locked out
+			if ( isset( $lockouts[ $lockout_item ] ) && time() < $lockouts[ $lockout_item ] ) {
+				$this->locked_out = true;
+				continue;
+			}
+
+			/* Check validity and add one to retries */
+			if ( isset( $retries[ $lockout_item ] ) && isset( $valid[ $lockout_item ] ) && time() < $valid[ $lockout_item ] ) {
+				$retries[ $lockout_item ]++;
+			} else {
+				$retries[ $lockout_item ] = 1;
+			}
+
+			$valid[ $lockout_item ] = time() + absint( get_option( 'hm_limit_login_valid_duration' ) );
+
+			/* lockout? */
+			if ( 0 !== $retries[ $lockout_item ] % absint( get_option( 'hm_limit_login_allowed_retries' ) ) ) {
+
+				/**
+				 * Not lockout (yet!)
+				 * Do housecleaning (which also saves retry/valid values).
+				 */
+				$this->cleanup( $retries, null, $valid );
+				$this->locked_out = true;
+
+				continue;
+			}
+
+			/* lockout! */
+			$whitelisted = false;
+
+			if ( 'ip' === $method ) {
+				$whitelisted = $validation_object->is_ip_whitelisted( $lockout_item );
+
+				/*
+				 * Note that retries and statistics are still counted and notifications
+				 * done as usual for whitelisted ips , but no lockout is done.
+				 */
+				if ( $whitelisted ) {
+					if ( $retries[ $lockout_item ] >= $retries_long ) {
+						unset( $retries[ $lockout_item ] );
+						unset( $valid[ $lockout_item ] );
+					}
+				}
+			}
+
+			if ( ! $whitelisted ) {
+				$validation_object->lockout();
+
+				/* setup lockout, reset retries as needed */
+				if ( $retries[ $lockout_item ] >= $retries_long ) {
+					/* long lockout */
+					$lockouts[ $lockout_item ] = time() + get_option( 'hm_limit_login_long_duration' );
+					unset( $retries[ $lockout_item ] );
+					unset( $valid[ $lockout_item ] );
+				} else {
+					/* normal lockout */
+					$lockouts[ $lockout_item ] = time() + get_option( 'hm_limit_login_lockout_duration' );
+				}
+			}
+
+		}
+
+		return array(
+			'lockouts' => $lockouts,
+			'retries'  => $retries,
+			'valid'    => $valid,
+		);
+	}
 
 	/* Make sure auth cookie really get cleared (for this session too) */
-	private function clear_auth_cookie() {
+	protected function clear_auth_cookie() {
 		wp_clear_auth_cookie();
 
 		if ( ! empty( $_COOKIE[ AUTH_COOKIE ] ) ) {
@@ -259,23 +335,22 @@ class Cookies extends Plugin {
 			return;
 		}
 
-		foreach ( $valid as $ip => $lockout ) {
+		foreach ( $valid as $lockout_item => $lockout ) {
 			if ( $lockout < $now ) {
-				unset( $valid[ $ip ] );
-				unset( $retries[ $ip ] );
+				unset( $valid[ $lockout_item ] );
+				unset( $retries[ $lockout_item ] );
 			}
 		}
 
 		/* go through retries directly, if for some reason they've gone out of sync */
-		foreach ( $retries as $ip => $retry ) {
-			if ( ! isset( $valid[ $ip ] ) ) {
-				unset( $retries[ $ip ] );
+		foreach ( $retries as $lockout_item => $retry ) {
+			if ( ! isset( $valid[ $lockout_item ] ) ) {
+				unset( $retries[ $lockout_item ] );
 			}
 		}
 
 		update_option( 'hm_limit_login_retries', $retries );
 		update_option( 'hm_limit_login_retries_valid', $valid );
 	}
-
 
 }

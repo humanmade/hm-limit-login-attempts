@@ -28,7 +28,7 @@ class Options extends Plugin {
 	/**
 	 * Show log on admin page
 	 */
-	private function show_log( $log ) {
+	public function show_log( $log ) {
 
 		if ( ! is_array( $log ) || count( $log ) == 0 ) {
 			return;
@@ -112,6 +112,22 @@ class Options extends Plugin {
 			}
 			$new_options['lockout_notify'] = implode( ',', $v );
 
+			$selected_lockout_method = array();
+
+			if ( isset( $_POST['lockout_method_ip'] ) ) {
+				$selected_lockout_method[] = 'ip';
+			}
+
+			if ( isset( $_POST['lockout_method_username'] ) ) {
+				$selected_lockout_method[] = 'username';
+			}
+
+			// This should never be empty. Defaulting to IP.
+			if ( empty( $selected_lockout_method ) ) {
+				$selected_lockout_method[] = 'ip';
+			}
+
+			$new_options['lockout_method'] = implode( ',', $selected_lockout_method );
 
 
 			foreach( $new_options as $option_key => $option_value ){
@@ -142,33 +158,46 @@ class Options extends Plugin {
 		$lockouts_now       = is_array( $lockouts ) ? count( $lockouts ) : 0;
 		$cookies_yes        = get_option( 'hm_limit_login_cookies' ) ? ' checked ' : '';
 		$cookies_no         = get_option( 'hm_limit_login_cookies' ) ? '' : ' checked ';
-		$client_type_direct = ( $client_type == LIMIT_LOGIN_DIRECT_ADDR ? ' checked ' : '' );
-		$client_type_proxy  = ( $client_type == LIMIT_LOGIN_PROXY_ADDR ? ' checked ' : '' );
+		$client_type_direct = ( $client_type == HM_LIMIT_LOGIN_DIRECT_ADDR ? ' checked ' : '' );
+		$client_type_proxy  = ( $client_type == HM_LIMIT_LOGIN_PROXY_ADDR ? ' checked ' : '' );
 		$client_type_guess  = $this->guess_proxy();
 		$client_type_message = '';
 		$client_type_warning = '';
 
+
 		$validation_object = Validation::get_instance();
 
-		if ( $client_type_guess == LIMIT_LOGIN_DIRECT_ADDR ) {
+		if ( $client_type_guess == HM_LIMIT_LOGIN_DIRECT_ADDR ) {
 
-			$client_type_message = sprintf( __( 'It appears the site is reached directly (from your IP: %s)', 'limit-login-attempts' ), $validation_object->get_address( LIMIT_LOGIN_DIRECT_ADDR ) );
+			$client_type_message = sprintf(
+				__( 'It appears the site is reached directly (from your IP: %s)', 'limit-login-attempts' ),
+				$validation_object->get_address( HM_LIMIT_LOGIN_DIRECT_ADDR )
+			);
 
 		} else {
-			$client_type_message = sprintf( __( 'It appears the site is reached through a proxy server (proxy IP: %s, your IP: %s)', 'limit-login-attempts' ), $validation_object->get_address( LIMIT_LOGIN_DIRECT_ADDR ), $validation_object->get_address( LIMIT_LOGIN_PROXY_ADDR ) );
+			$client_type_message = sprintf(
+				__( 'It appears the site is reached through a proxy server (proxy IP: %s, your IP: %s)', 'limit-login-attempts' ),
+				$validation_object->get_address( HM_LIMIT_LOGIN_DIRECT_ADDR ),
+				$validation_object->get_address( HM_LIMIT_LOGIN_PROXY_ADDR )
+			);
 		}
 		$client_type_message .= '<br />';
 
 		if ( $client_type != $client_type_guess ) {
 
 			$faq = 'http://wordpress.org/extend/plugins/limit-login-attempts/faq/';
-			$client_type_warning = '<br /><br />' . sprintf( __( '<strong>Current setting appears to be invalid</strong>. Please make sure it is correct. Further information can be found <a href="%s" title="FAQ">here</a>', 'limit-login-attempts' ), $faq );
+			$client_type_warning = '<p>' . sprintf( __( '<strong>Current setting appears to be invalid</strong>. Please make sure it is correct. Further information can be found <a href="%s" title="FAQ">here</a>', 'limit-login-attempts' ), $faq ) . '</p>';
 
 		}
 
 		$v             = explode( ',', get_option( 'hm_limit_login_lockout_notify' ) );
 		$log_checked   = in_array( 'log', $v ) ? ' checked ' : '';
 		$email_checked = in_array( 'email', $v ) ? ' checked ' : '';
+
+		$saved_lockout_methods = $validation_object->get_lockout_methods();
+
+		$lockout_method_ip       = checked( 1, $saved_lockout_methods['ip'], false );
+		$lockout_method_username = checked( 1, $saved_lockout_methods['username'], false );
 
 		include( HM_LIMIT_LOGIN_DIR . 'inc/options-page.php' );
 
@@ -178,8 +207,8 @@ class Options extends Plugin {
 	 * Make a guess if we are behind a proxy or not
 	 */
 	private function guess_proxy() {
-		return isset( $_SERVER[ LIMIT_LOGIN_PROXY_ADDR ] )
-			? LIMIT_LOGIN_PROXY_ADDR : LIMIT_LOGIN_DIRECT_ADDR;
+		return isset( $_SERVER[ HM_LIMIT_LOGIN_PROXY_ADDR ] )
+			? HM_LIMIT_LOGIN_PROXY_ADDR : HM_LIMIT_LOGIN_DIRECT_ADDR;
 	}
 
 }

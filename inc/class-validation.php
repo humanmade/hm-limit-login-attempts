@@ -2,15 +2,59 @@
 
 namespace HM\Limit_Login_Attempts;
 
-use HM\Limit_Login_Attempts\Plugin;
-
 class Validation extends Plugin {
 
+	/**
+	 * Track username during login
+	 *
+	 * @var string|null
+	 */
+	private $username;
+
+	/**
+	 * Track password during login
+	 *
+	 * @var string|null
+	 */
+	private $password;
+
+	/**
+	 * Has the user only just been locked out
+	 *
+	 * @var bool
+	 */
+	private $just_locked_out = false;
+
+
 	public function load() {
-		add_filter( 'wp_authenticate_user', array( $this, 'wp_authenticate_user' ), 99999, 2 );
+		add_filter( 'authenticate', array( $this, 'track_credentials' ), -10, 3 );
+		add_filter( 'authenticate', array( $this, 'authenticate' ), 99999, 3 );
 	}
 
-	/* Get correct remote address */
+	/**
+	 * Return the username from the authentication step
+	 *
+	 * @return null|string
+	 */
+	public function get_username() {
+		return $this->username;
+	}
+
+	/**
+	 * Check if the password is empty or not, do not pass the value
+	 *
+	 * @return bool
+	 */
+	public function has_password() {
+		return ! empty( $this->password );
+	}
+
+	/**
+	 * Get correct remote address
+	 *
+	 * @param string $type_name
+	 * @return string
+	 */
 	public function get_address( $type_name = '' ) {
 		$type = $type_name;
 
@@ -26,8 +70,8 @@ class Validation extends Plugin {
 		 * Not found. Did we get proxy type from option?
 		 * If so, try to fall back to direct address.
 		 */
-		if ( empty( $type_name ) && $type == LIMIT_LOGIN_PROXY_ADDR
-		     && isset( $_SERVER[ LIMIT_LOGIN_DIRECT_ADDR ] )
+		if ( empty( $type_name ) && $type == HM_LIMIT_LOGIN_PROXY_ADDR
+			&& isset( $_SERVER[ HM_LIMIT_LOGIN_DIRECT_ADDR ] )
 		) {
 			/*
 			 * NOTE: Even though we fall back to direct address -- meaning you
@@ -38,19 +82,51 @@ class Validation extends Plugin {
 			 * regarding which IP should be banned.
 			 */
 
-			return $_SERVER[ LIMIT_LOGIN_DIRECT_ADDR ];
+			return $_SERVER[ HM_LIMIT_LOGIN_DIRECT_ADDR ];
 		}
 
 		return '';
 	}
 
-	/* Is this WP Multisite? */
-	public function is_multisite() {
-		return function_exists( 'get_site_option' ) && function_exists( 'is_multisite' ) && is_multisite();
+	/**
+	 * Return an array of lockout methods to try
+	 *
+	 * @return array
+	 */
+	public function get_lockout_methods() {
+		$saved_lockout_methods       = explode( ',', get_option( 'hm_limit_login_lockout_method' ) );
+		$lockout_methods             = array();
+		$lockout_methods['ip']       = in_array( 'ip', $saved_lockout_methods, true );
+		$lockout_methods['username'] = in_array( 'username', $saved_lockout_methods, true );
+
+		return $lockout_methods;
+
 	}
 
-	/* Check if it is ok to login */
+	/**
+	 * Check if it is ok to login
+	 *
+	 * @return bool
+	 */
 	public function is_ok_to_login() {
+
+		$lockout_method = $this->get_lockout_methods();
+
+		$username_result = false;
+		$ip_result       = false;
+
+		if ( $lockout_method['username'] ) {
+			$username_result = $this->validate_username_login();
+		}
+
+		if ( $lockout_method['ip'] ) {
+			$ip_result = $this->validate_ip_login();
+		}
+
+		return ( $ip_result && $username_result );
+	}
+
+	private function validate_ip_login() {
 
 		$ip = $this->get_address();
 
@@ -59,14 +135,27 @@ class Validation extends Plugin {
 			return true;
 		}
 
-		/* lockout active? */
-		$lockouts = get_option( 'limit_login_lockouts' );
+		$lockouts = get_option( 'hm_limit_login_lockouts' );
 
 		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $ip ] ) || time() >= $lockouts[ $ip ] );
+
 	}
 
+	/**
+	 * Check username isn't in block list
+	 *
+	 * @return bool
+	 */
+	private function validate_username_login() {
 
-	/*
+		$username = $this->get_username();
+
+		$lockouts = get_option( 'hm_limit_login_lockouts' );
+
+		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $username ] ) || time() >= $lockouts[ $username ] );
+	}
+
+	/**
 	 * Check if IP is whitelisted.
 	 *
 	 * This function allow external ip whitelisting using a filter. Note that it can
@@ -77,9 +166,12 @@ class Validation extends Plugin {
 	 *
 	 * Example:
 	 * function my_ip_whitelist($allow, $ip) {
-	 * 	return ($ip == 'my-ip') ? true : $allow;
+	 *    return ($ip == 'my-ip') ? true : $allow;
 	 * }
-	 * add_filter('limit_login_whitelist_ip', 'my_ip_whitelist', 10, 2);
+	 * add_filter('hm_limit_login_whitelist_ip', 'my_ip_whitelist', 10, 2);
+	 *
+	 * @param null|string $ip
+	 * @return bool
 	 */
 	public function is_ip_whitelisted( $ip = null ) {
 		if ( is_null( $ip ) ) {
@@ -90,24 +182,56 @@ class Validation extends Plugin {
 		return ( $whitelisted === true );
 	}
 
+	/**
+	 * Filter: allow login attempt? (called from wp_authenticate())
+	 *
+	 * @param \WP_User|\WP_Error $user
+	 * @param string             $username
+	 * @param string             $password
+	 * @return \WP_User|\WP_Error
+	 */
+	public function authenticate( $user, $username, $password ) {
 
-	/* Filter: allow login attempt? (called from wp_authenticate()) */
-	public function wp_authenticate_user( $user, $password ) {
-		if ( is_wp_error( $user ) || $this->is_ok_to_login() ) {
+		if ( $this->is_ok_to_login() ) {
 			return $user;
 		}
-
-		global $limit_login_my_error_shown;
-		$limit_login_my_error_shown = true;
 
 		$error = new \WP_Error();
 		// This error should be the same as in "shake it" filter below
 		$errors_object = Errors::get_instance();
+		$errors_object->show_error();
 		$error->add( 'too_many_retries', $errors_object->error_msg() );
 
 		return $error;
 	}
 
+	/**
+	 * Set the passed in credentials early.
+	 *
+	 * @param $user
+	 * @param $username
+	 * @param $password
+	 */
+	public function track_credentials( $user, $username, $password ) {
 
+		$this->username = $username;
+		$this->password = $password;
+
+		return $user;
+	}
+
+	/**
+	 * Lockout the user immediately.
+	 */
+	public function lockout() {
+		$this->just_locked_out = true;
+	}
+
+	/**
+	 * Get the lockout status.
+	 */
+	public function just_locked_out() {
+		return $this->just_locked_out;
+	}
 
 }

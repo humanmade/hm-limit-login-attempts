@@ -36,7 +36,7 @@ abstract class Plugin {
 		$class     = ltrim( get_called_class(), '\\' );
 
 		if ( 0 !== stripos( $class, $namespace ) ) {
-			return;
+			return '';
 		}
 
 		$class = substr( $class, strlen( $namespace ) + 1 );
