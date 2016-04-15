@@ -113,7 +113,7 @@ class Cookies extends Plugin {
 	/*
 	 * Action: successful cookie login
 	 *
-	 * Clear any stored user_meta.
+	 * Clear any stored user_meta and retries
 	 *
 	 * Requires WordPress version 3.0.0, not used in previous versions
 	 */
@@ -184,9 +184,9 @@ class Cookies extends Plugin {
 			* get_option( 'hm_limit_login_allowed_lockouts' );
 
 		return array(
-			'retries'      => $retries,
-			'valid'        => $valid,
-			'retries_long' => $retries_long,
+			$retries,
+			$valid,
+			$retries_long,
 		);
 	}
 
@@ -291,9 +291,9 @@ class Cookies extends Plugin {
 		}
 
 		return array(
-			'lockouts' => $lockouts,
-			'retries'  => $retries,
-			'valid'    => $valid,
+			$lockouts,
+			$retries,
+			$valid,
 		);
 	}
 
