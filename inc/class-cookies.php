@@ -129,37 +129,6 @@ class Cookies extends Plugin {
 		if ( get_user_meta( $user->ID, 'hm_limit_login_previous_cookie' ) ) {
 			delete_user_meta( $user->ID, 'hm_limit_login_previous_cookie' );
 		}
-
-		$validation_object = Validation::get_instance();
-		$lockouts          = $this->get_lockouts();
-		list( , $valid, )  = $this->get_retries_data();
-
-		foreach ( $validation_object->get_lockout_methods() as $method => $active ) {
-
-			if ( ! $active ) {
-				continue;
-			}
-
-			switch ( $method ) {
-				case 'ip':
-					$lockout_item = $validation_object->get_address();
-					break;
-				case 'username':
-					$lockout_item = $validation_object->get_username();
-					break;
-			}
-
-			if ( isset( $lockouts[ $lockout_item ] ) ) {
-				$lockouts[ $lockout_item ] = time() - 1;
-			}
-
-			if ( isset( $valid[ $lockout_item ] ) ) {
-				$valid[ $lockout_item ] = time() - 1;
-			}
-		}
-
-		// Removes the lockout and retries after a successful login
-		$this->cleanup( null, $lockouts, $valid );
 	}
 
 	/**
@@ -215,7 +184,7 @@ class Cookies extends Plugin {
 	 *
 	 * @return array
 	 */
-	protected function get_retries_data() {
+	public function get_retries_data() {
 		$retries = get_option( 'hm_limit_login_retries' );
 		$valid   = get_option( 'hm_limit_login_retries_valid' );
 		if ( ! is_array( $retries ) ) {
@@ -360,7 +329,7 @@ class Cookies extends Plugin {
 	/* Clean up old lockouts and retries, and save supplied arrays */
 	public function cleanup( $retries = null, $lockouts = null, $valid = null ) {
 		$now      = time();
-		$lockouts = ! is_null( $lockouts ) ? $lockouts : get_option( 'hm_limit_login_lockouts' );
+		$lockouts = ! is_null( $lockouts ) ? $lockouts : $this->get_lockouts();
 
 		/* remove old lockouts */
 		if ( is_array( $lockouts ) ) {
