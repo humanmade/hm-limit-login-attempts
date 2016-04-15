@@ -141,11 +141,16 @@ class Errors extends Plugin {
 			return false;
 		}
 
-		$action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : '';
+		$action     = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : '';
+		$logged_out = isset( $_REQUEST['loggedout'] );
 
-		return ( $action != 'lostpassword' && $action != 'retrievepassword'
-			&& $action != 'resetpass' && $action != 'rp'
-			&& $action != 'register' );
+		return ! $logged_out && ! in_array( $action, array(
+			'lostpassword',
+			'retrievepassword',
+			'resetpass',
+			'rp',
+			'register',
+		) );
 	}
 
 
