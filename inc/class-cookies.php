@@ -110,12 +110,15 @@ class Cookies extends Plugin {
 	}
 
 
-	/*
+	/**
 	 * Action: successful cookie login
 	 *
 	 * Clear any stored user_meta and retries
 	 *
 	 * Requires WordPress version 3.0.0, not used in previous versions
+	 *
+	 * @param array    $cookie_elements User information contained in the cookie
+	 * @param \WP_User $user            User object
 	 */
 	public function valid_cookie( $cookie_elements, $user ) {
 		/*
@@ -126,6 +129,37 @@ class Cookies extends Plugin {
 		if ( get_user_meta( $user->ID, 'hm_limit_login_previous_cookie' ) ) {
 			delete_user_meta( $user->ID, 'hm_limit_login_previous_cookie' );
 		}
+
+		$validation_object = Validation::get_instance();
+		$lockouts          = $this->get_lockouts();
+		list( , $valid, )  = $this->get_retries_data();
+
+		foreach ( $validation_object->get_lockout_methods() as $method => $active ) {
+
+			if ( ! $active ) {
+				continue;
+			}
+
+			switch ( $method ) {
+				case 'ip':
+					$lockout_item = $validation_object->get_address();
+					break;
+				case 'username':
+					$lockout_item = $validation_object->get_username();
+					break;
+			}
+
+			if ( isset( $lockouts[ $lockout_item ] ) ) {
+				$lockouts[ $lockout_item ] = time() - 1;
+			}
+
+			if ( isset( $valid[ $lockout_item ] ) ) {
+				$valid[ $lockout_item ] = time() - 1;
+			}
+		}
+
+		// Removes the lockout and retries after a successful login
+		$this->cleanup( null, $lockouts, $valid );
 	}
 
 	/**
@@ -161,6 +195,19 @@ class Cookies extends Plugin {
 		} else {
 			update_option( 'hm_limit_login_lockouts_total', $total + 1 );
 		}
+	}
+
+	/**
+	 * Returns the array of lockouts
+	 *
+	 * @return array
+	 */
+	public function get_lockouts() {
+		$lockouts = get_option( 'hm_limit_login_lockouts' );
+		if ( ! is_array( $lockouts ) ) {
+			$lockouts = array();
+		}
+		return $lockouts;
 	}
 
 	/**
@@ -200,10 +247,7 @@ class Cookies extends Plugin {
 		$validation_object = Validation::get_instance();
 
 		/* if currently locked-out, do not add to retries */
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
-		if ( ! is_array( $lockouts ) ) {
-			$lockouts = array();
-		}
+		$lockouts = $this->get_lockouts();
 
 		/* Get the arrays with retries and retries-valid information */
 		list( $retries, $valid, $retries_long ) = $this->get_retries_data();
@@ -320,9 +364,9 @@ class Cookies extends Plugin {
 
 		/* remove old lockouts */
 		if ( is_array( $lockouts ) ) {
-			foreach ( $lockouts as $ip => $lockout ) {
+			foreach ( $lockouts as $lockout_item => $lockout ) {
 				if ( $lockout < $now ) {
-					unset( $lockouts[ $ip ] );
+					unset( $lockouts[ $lockout_item ] );
 				}
 			}
 			update_option( 'hm_limit_login_lockouts', $lockouts );
