@@ -110,16 +110,19 @@ class Validation extends Plugin {
 	 */
 	public function is_ok_to_login() {
 
-		$lockout_method = $this->get_lockout_methods();
+		$lockout_methods = $this->get_lockout_methods();
 
-		$username_result = false;
-		$ip_result       = false;
+		// If the method is active then we default the value to false so
+		// the validation result has to override it. If it's inactive we
+		// assume the result is ok.
+		$username_result = ! $lockout_methods['username'];
+		$ip_result       = ! $lockout_methods['ip'];
 
-		if ( $lockout_method['username'] ) {
+		if ( $lockout_methods['username'] ) {
 			$username_result = $this->validate_username_login();
 		}
 
-		if ( $lockout_method['ip'] ) {
+		if ( $lockout_methods['ip'] ) {
 			$ip_result = $this->validate_ip_login();
 		}
 
