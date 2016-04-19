@@ -110,12 +110,15 @@ class Cookies extends Plugin {
 	}
 
 
-	/*
+	/**
 	 * Action: successful cookie login
 	 *
 	 * Clear any stored user_meta and retries
 	 *
 	 * Requires WordPress version 3.0.0, not used in previous versions
+	 *
+	 * @param array    $cookie_elements User information contained in the cookie
+	 * @param \WP_User $user            User object
 	 */
 	public function valid_cookie( $cookie_elements, $user ) {
 		/*
@@ -164,11 +167,24 @@ class Cookies extends Plugin {
 	}
 
 	/**
+	 * Returns the array of lockouts
+	 *
+	 * @return array
+	 */
+	public function get_lockouts() {
+		$lockouts = get_option( 'hm_limit_login_lockouts' );
+		if ( ! is_array( $lockouts ) ) {
+			$lockouts = array();
+		}
+		return $lockouts;
+	}
+
+	/**
 	 * Fetches retries data and sets it up if it doesn't exist yet
 	 *
 	 * @return array
 	 */
-	protected function get_retries_data() {
+	public function get_retries_data() {
 		$retries = get_option( 'hm_limit_login_retries' );
 		$valid   = get_option( 'hm_limit_login_retries_valid' );
 		if ( ! is_array( $retries ) ) {
@@ -200,10 +216,7 @@ class Cookies extends Plugin {
 		$validation_object = Validation::get_instance();
 
 		/* if currently locked-out, do not add to retries */
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
-		if ( ! is_array( $lockouts ) ) {
-			$lockouts = array();
-		}
+		$lockouts = $this->get_lockouts();
 
 		/* Get the arrays with retries and retries-valid information */
 		list( $retries, $valid, $retries_long ) = $this->get_retries_data();
@@ -316,13 +329,13 @@ class Cookies extends Plugin {
 	/* Clean up old lockouts and retries, and save supplied arrays */
 	public function cleanup( $retries = null, $lockouts = null, $valid = null ) {
 		$now      = time();
-		$lockouts = ! is_null( $lockouts ) ? $lockouts : get_option( 'hm_limit_login_lockouts' );
+		$lockouts = ! is_null( $lockouts ) ? $lockouts : $this->get_lockouts();
 
 		/* remove old lockouts */
 		if ( is_array( $lockouts ) ) {
-			foreach ( $lockouts as $ip => $lockout ) {
+			foreach ( $lockouts as $lockout_item => $lockout ) {
 				if ( $lockout < $now ) {
-					unset( $lockouts[ $ip ] );
+					unset( $lockouts[ $lockout_item ] );
 				}
 			}
 			update_option( 'hm_limit_login_lockouts', $lockouts );

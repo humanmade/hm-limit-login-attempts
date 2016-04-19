@@ -28,7 +28,7 @@ class Validation extends Plugin {
 
 	public function load() {
 		add_filter( 'authenticate', array( $this, 'track_credentials' ), -10, 3 );
-		add_filter( 'authenticate', array( $this, 'authenticate' ), 99999, 3 );
+		add_filter( 'authenticate', array( $this, 'authenticate' ), 99999, 1 );
 	}
 
 	/**
@@ -189,13 +189,14 @@ class Validation extends Plugin {
 	 * Filter: allow login attempt? (called from wp_authenticate())
 	 *
 	 * @param \WP_User|\WP_Error $user
-	 * @param string             $username
-	 * @param string             $password
 	 * @return \WP_User|\WP_Error
 	 */
-	public function authenticate( $user, $username, $password ) {
-
+	public function authenticate( $user ) {
+		
 		if ( $this->is_ok_to_login() ) {
+			if ( $user instanceof \WP_User ) {
+				$this->cleanup_on_login();
+			}
 			return $user;
 		}
 
@@ -206,6 +207,24 @@ class Validation extends Plugin {
 		$error->add( 'too_many_retries', $errors_object->error_msg() );
 
 		return $error;
+	}
+
+	/**
+	 * Tidy up retries on a successful login
+	 */
+	protected function cleanup_on_login() {
+
+		$cookies = Cookies::get_instance();
+		list( , $valid, )  = $cookies->get_retries_data();
+
+		foreach( array( $this->get_address(), $this->get_username() ) as $lockout_item ) {
+			if ( isset( $valid[ $lockout_item ] ) ) {
+				$valid[ $lockout_item ] = -1;
+			}
+		}
+
+		// Removes the lockout and retries after a successful login
+		$cookies->cleanup( null, null, $valid );
 	}
 
 	/**
