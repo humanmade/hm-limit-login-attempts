@@ -28,7 +28,8 @@ class Errors extends Plugin {
 		$validation_object = Validation::get_instance();
 		$ip                = $validation_object->get_address();
 		$username          = $validation_object->get_username();
-		$lockouts          = get_option( 'hm_limit_login_lockouts' );
+		$lockouts          = get_option( 'hm_limit_login_lockouts', array() );
+		$lockouts          = array_change_key_case( $lockouts, CASE_LOWER );
 
 		$msg = __( '<strong>ERROR</strong>: Too many failed login attempts.', 'limit-login-attempts' ) . ' ';
 
