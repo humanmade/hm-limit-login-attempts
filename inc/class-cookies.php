@@ -167,19 +167,6 @@ class Cookies extends Plugin {
 	}
 
 	/**
-	 * Returns the array of lockouts
-	 *
-	 * @return array
-	 */
-	public function get_lockouts() {
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
-		if ( ! is_array( $lockouts ) ) {
-			$lockouts = array();
-		}
-		return $lockouts;
-	}
-
-	/**
 	 * Fetches retries data and sets it up if it doesn't exist yet
 	 *
 	 * @return array
@@ -217,9 +204,6 @@ class Cookies extends Plugin {
 
 		/* if currently locked-out, do not add to retries */
 		$lockouts = $this->get_lockouts();
-
-		/* Ensure our checks are case insensitive */
-		$lockouts = array_change_key_case( $lockouts, CASE_LOWER );
 
 		/* Get the arrays with retries and retries-valid information */
 		list( $retries, $valid, $retries_long ) = $this->get_retries_data();

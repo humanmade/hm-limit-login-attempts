@@ -3,6 +3,7 @@
 namespace HM\Limit_Login_Attempts;
 
 use HM\Limit_Login_Attempts\Plugin;
+use WooCommerce\Tests\Util\Validation;
 
 /**
  * Class Options
@@ -53,7 +54,8 @@ class Options extends Plugin {
 
 	/* Actual admin page */
 	public function option_page() {
-		$cookies_object = Cookies::get_instance();
+		$validation_object = Validation::get_instance();
+		$cookies_object    = Cookies::get_instance();
 		$cookies_object->cleanup();
 
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -140,7 +142,7 @@ class Options extends Plugin {
 			}
 
 			echo '<div id="message" class="updated fade"><p>'
-			     . __( 'Options changed', 'limit-login-attempts' )
+			     . esc_html__( 'Options changed', 'limit-login-attempts' )
 			     . '</p></div>';
 		}
 
@@ -154,7 +156,7 @@ class Options extends Plugin {
 		$notify_email_after = absint( get_option( 'hm_limit_login_email_after' ) );
 		$cookies            = absint( isset( $_POST['cookies'] ) && $_POST['cookies'] == '1' );
 		$lockouts_total     = absint( get_option( 'hm_limit_login_lockouts_total', 0 ) );
-		$lockouts           = get_option( 'hm_limit_login_lockouts' );
+		$lockouts           = $validation_object->get_lockouts();
 		$lockouts_now       = is_array( $lockouts ) ? count( $lockouts ) : 0;
 		$cookies_yes        = get_option( 'hm_limit_login_cookies' ) ? ' checked ' : '';
 		$cookies_no         = get_option( 'hm_limit_login_cookies' ) ? '' : ' checked ';
@@ -163,9 +165,6 @@ class Options extends Plugin {
 		$client_type_guess  = $this->guess_proxy();
 		$client_type_message = '';
 		$client_type_warning = '';
-
-
-		$validation_object = Validation::get_instance();
 
 		if ( $client_type_guess == HM_LIMIT_LOGIN_DIRECT_ADDR ) {
 
