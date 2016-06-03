@@ -203,7 +203,7 @@ class Cookies extends Plugin {
 		$validation_object = Validation::get_instance();
 
 		/* if currently locked-out, do not add to retries */
-		$lockouts = $this->get_lockouts();
+		$lockouts = $validation_object->get_lockouts();
 
 		/* Get the arrays with retries and retries-valid information */
 		list( $retries, $valid, $retries_long ) = $this->get_retries_data();
