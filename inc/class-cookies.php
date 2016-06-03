@@ -196,14 +196,14 @@ class Cookies extends Plugin {
 			add_option( 'hm_limit_login_retries_valid', $valid, '', 'no' );
 		}
 
-		$retries_long = get_option( 'hm_limit_login_allowed_retries' )
-			* get_option( 'hm_limit_login_allowed_lockouts' );
+		$retries_long = (int) get_option( 'hm_limit_login_allowed_retries' )
+			* (int) get_option( 'hm_limit_login_allowed_lockouts' );
 
-		return array(
+		return array_map( 'array_change_key_case', array(
 			$retries,
 			$valid,
 			$retries_long,
-		);
+		) );
 	}
 
 	/**
@@ -217,6 +217,9 @@ class Cookies extends Plugin {
 
 		/* if currently locked-out, do not add to retries */
 		$lockouts = $this->get_lockouts();
+
+		/* Ensure our checks are case insensitive */
+		$lockouts = array_change_key_case( $lockouts, CASE_LOWER );
 
 		/* Get the arrays with retries and retries-valid information */
 		list( $retries, $valid, $retries_long ) = $this->get_retries_data();
@@ -292,12 +295,12 @@ class Cookies extends Plugin {
 				/* setup lockout, reset retries as needed */
 				if ( $retries[ $lockout_item ] >= $retries_long ) {
 					/* long lockout */
-					$lockouts[ $lockout_item ] = time() + get_option( 'hm_limit_login_long_duration' );
+					$lockouts[ $lockout_item ] = time() + (int) get_option( 'hm_limit_login_long_duration' );
 					unset( $retries[ $lockout_item ] );
 					unset( $valid[ $lockout_item ] );
 				} else {
 					/* normal lockout */
-					$lockouts[ $lockout_item ] = time() + get_option( 'hm_limit_login_lockout_duration' );
+					$lockouts[ $lockout_item ] = time() + (int) get_option( 'hm_limit_login_lockout_duration' );
 				}
 			}
 

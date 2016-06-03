@@ -37,7 +37,7 @@ class Validation extends Plugin {
 	 * @return null|string
 	 */
 	public function get_username() {
-		return $this->username;
+		return strtolower( $this->username );
 	}
 
 	/**
@@ -153,7 +153,8 @@ class Validation extends Plugin {
 
 		$username = $this->get_username();
 
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
+		$lockouts = get_option( 'hm_limit_login_lockouts', array() );
+		$lockouts = array_change_key_case( $lockouts, CASE_LOWER );
 
 		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $username ] ) || time() >= $lockouts[ $username ] );
 	}
