@@ -186,11 +186,14 @@ class Cookies extends Plugin {
 		$retries_long = (int) get_option( 'hm_limit_login_allowed_retries' )
 			* (int) get_option( 'hm_limit_login_allowed_lockouts' );
 
-		return array_map( 'array_change_key_case', array(
+		$retries_data = array_map( 'array_change_key_case', array(
 			$retries,
 			$valid,
-			$retries_long,
 		) );
+
+		$retries_data[] = $retries_long;
+
+		return $retries_data;
 	}
 
 	/**
@@ -315,8 +318,10 @@ class Cookies extends Plugin {
 
 	/* Clean up old lockouts and retries, and save supplied arrays */
 	public function cleanup( $retries = null, $lockouts = null, $valid = null ) {
+		$validation_object = Validation::get_instance();
+
 		$now      = time();
-		$lockouts = ! is_null( $lockouts ) ? $lockouts : $this->get_lockouts();
+		$lockouts = ! is_null( $lockouts ) ? $lockouts : $validation_object->get_lockouts();
 
 		/* remove old lockouts */
 		if ( is_array( $lockouts ) ) {
