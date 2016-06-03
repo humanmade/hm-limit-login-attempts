@@ -37,6 +37,9 @@ class Options extends Plugin {
 			echo( '<tr><td class="limit-login-ip">' . $ip . '</td><td class="limit-login-max">' );
 			$first = true;
 			foreach ( $arr as $user => $count ) {
+				if ( ! get_user_by( 'login', $user ) ) {
+					continue;
+				}
 				$count_desc = sprintf( _n( '%d lockout', '%d lockouts', $count, 'limit-login-attempts' ), $count );
 				if ( ! $first ) {
 					echo( ', ' . $user . ' (' . $count_desc . ')' );
