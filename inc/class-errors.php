@@ -2,8 +2,6 @@
 
 namespace HM\Limit_Login_Attempts;
 
-use HM\Limit_Login_Attempts\Plugin;
-
 class Errors extends Plugin {
 
 	/**
