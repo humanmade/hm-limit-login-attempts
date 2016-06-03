@@ -167,19 +167,6 @@ class Cookies extends Plugin {
 	}
 
 	/**
-	 * Returns the array of lockouts
-	 *
-	 * @return array
-	 */
-	public function get_lockouts() {
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
-		if ( ! is_array( $lockouts ) ) {
-			$lockouts = array();
-		}
-		return $lockouts;
-	}
-
-	/**
 	 * Fetches retries data and sets it up if it doesn't exist yet
 	 *
 	 * @return array
@@ -196,14 +183,17 @@ class Cookies extends Plugin {
 			add_option( 'hm_limit_login_retries_valid', $valid, '', 'no' );
 		}
 
-		$retries_long = get_option( 'hm_limit_login_allowed_retries' )
-			* get_option( 'hm_limit_login_allowed_lockouts' );
+		$retries_long = (int) get_option( 'hm_limit_login_allowed_retries' )
+			* (int) get_option( 'hm_limit_login_allowed_lockouts' );
 
-		return array(
+		$retries_data = array_map( 'array_change_key_case', array(
 			$retries,
 			$valid,
-			$retries_long,
-		);
+		) );
+
+		$retries_data[] = $retries_long;
+
+		return $retries_data;
 	}
 
 	/**
@@ -216,7 +206,7 @@ class Cookies extends Plugin {
 		$validation_object = Validation::get_instance();
 
 		/* if currently locked-out, do not add to retries */
-		$lockouts = $this->get_lockouts();
+		$lockouts = $validation_object->get_lockouts();
 
 		/* Get the arrays with retries and retries-valid information */
 		list( $retries, $valid, $retries_long ) = $this->get_retries_data();
@@ -292,12 +282,12 @@ class Cookies extends Plugin {
 				/* setup lockout, reset retries as needed */
 				if ( $retries[ $lockout_item ] >= $retries_long ) {
 					/* long lockout */
-					$lockouts[ $lockout_item ] = time() + get_option( 'hm_limit_login_long_duration' );
+					$lockouts[ $lockout_item ] = time() + (int) get_option( 'hm_limit_login_long_duration' );
 					unset( $retries[ $lockout_item ] );
 					unset( $valid[ $lockout_item ] );
 				} else {
 					/* normal lockout */
-					$lockouts[ $lockout_item ] = time() + get_option( 'hm_limit_login_lockout_duration' );
+					$lockouts[ $lockout_item ] = time() + (int) get_option( 'hm_limit_login_lockout_duration' );
 				}
 			}
 
@@ -328,8 +318,10 @@ class Cookies extends Plugin {
 
 	/* Clean up old lockouts and retries, and save supplied arrays */
 	public function cleanup( $retries = null, $lockouts = null, $valid = null ) {
+		$validation_object = Validation::get_instance();
+
 		$now      = time();
-		$lockouts = ! is_null( $lockouts ) ? $lockouts : $this->get_lockouts();
+		$lockouts = ! is_null( $lockouts ) ? $lockouts : $validation_object->get_lockouts();
 
 		/* remove old lockouts */
 		if ( is_array( $lockouts ) ) {

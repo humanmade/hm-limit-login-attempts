@@ -37,7 +37,7 @@ class Validation extends Plugin {
 	 * @return null|string
 	 */
 	public function get_username() {
-		return $this->username;
+		return strtolower( $this->username );
 	}
 
 	/**
@@ -100,7 +100,17 @@ class Validation extends Plugin {
 		$lockout_methods['username'] = in_array( 'username', $saved_lockout_methods, true );
 
 		return $lockout_methods;
+	}
 
+	/**
+	 * Returns the array of lockouts
+	 *
+	 * @return array
+	 */
+	public function get_lockouts() {
+		$lockouts = (array) get_option( 'hm_limit_login_lockouts', array() );
+		$lockouts = array_change_key_case( $lockouts, CASE_LOWER );
+		return $lockouts;
 	}
 
 	/**
@@ -138,7 +148,7 @@ class Validation extends Plugin {
 			return true;
 		}
 
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
+		$lockouts = $this->get_lockouts();
 
 		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $ip ] ) || time() >= $lockouts[ $ip ] );
 
@@ -152,8 +162,7 @@ class Validation extends Plugin {
 	private function validate_username_login() {
 
 		$username = $this->get_username();
-
-		$lockouts = get_option( 'hm_limit_login_lockouts' );
+		$lockouts = $this->get_lockouts();
 
 		return ( ! is_array( $lockouts ) || ! isset( $lockouts[ $username ] ) || time() >= $lockouts[ $username ] );
 	}
