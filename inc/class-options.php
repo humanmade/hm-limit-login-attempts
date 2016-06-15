@@ -35,16 +35,13 @@ class Options extends Plugin {
 		echo( '<tr><th scope="col">' . _x( "IP", "Internet address", 'limit-login-attempts' ) . '</th><th scope="col">' . __( 'Tried to log in as', 'limit-login-attempts' ) . '</th></tr>' );
 		foreach ( $log as $ip => $arr ) {
 			echo( '<tr><td class="limit-login-ip">' . $ip . '</td><td class="limit-login-max">' );
-			$first = true;
+			$list = array();
 			foreach ( $arr as $user => $count ) {
-				$count_desc = sprintf( _n( '%d lockout', '%d lockouts', $count, 'limit-login-attempts' ), $count );
-				if ( ! $first ) {
-					echo( ', ' . $user . ' (' . $count_desc . ')' );
-				} else {
-					echo( $user . ' (' . $count_desc . ')' );
-				}
-				$first = false;
+				$user_obj   = get_user_by( 'login', $user );
+				$count_desc = sprintf( esc_html( _n( '%d lockout', '%d lockouts', $count, 'limit-login-attempts' ) ), $count );
+				$list[]     = esc_html( $user ) . ( $user_obj ? esc_html__( ' (invalid)', 'limit-login-attempts' ) : '' ) . ' (' . $count_desc . ')';
 			}
+			echo implode( ', ', $list );
 			echo( '</td></tr>' );
 		}
 	}
