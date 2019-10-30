@@ -29,7 +29,7 @@
 namespace HM\Limit_Login_Attempts;
 
 define('HM_LIMIT_LOGIN_VERSION', '1.0' );
-define('HM_LIMIT_LOGIN_DIR', trailingslashit( __DIR__ ) );
+define('HM_LIMIT_LOGIN_DIR', \trailingslashit( __DIR__ ) );
 
 /* Different ways to get remote address: direct & behind proxy */
 defined( 'HM_LIMIT_LOGIN_DIRECT_ADDR' ) or define( 'HM_LIMIT_LOGIN_DIRECT_ADDR', 'REMOTE_ADDR' );
