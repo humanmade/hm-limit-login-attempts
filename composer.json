@@ -9,5 +9,12 @@
             "email": "hello@humanmade.com"
         }
     ],
-    "require": {}
+    "autoload": {
+        "files": [
+            "hm-limit-login-attempts.php"
+        ],
+        "classmap": [
+            "inc/"
+        ]
+    }
 }
