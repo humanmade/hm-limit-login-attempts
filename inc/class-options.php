@@ -19,7 +19,7 @@ class Options extends Plugin {
 	 */
 	public function admin_menu() {
 
-		add_options_page( 'HM Limit Login Attempts', 'HM Limit Login', 'manage_options', 'hm-limit-login-attempts', array( $this, 'option_page' ) );
+		add_options_page( __( 'Limit Login Attempts', 'limit-login-attempts' ), __( 'Limit Login', 'limit-login-attempts' ), 'manage_options', 'hm-limit-login-attempts', array( $this, 'option_page' ) );
 
 	}
 
