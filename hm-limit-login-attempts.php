@@ -7,7 +7,7 @@
  * Author:       Human Made
  * Author URI:   http://hmn.md
  * Text Domain:  hm-limit-login-attempts
- * Version: 1.0
+ * Version: 1.1
  *
  *
  * Licenced under the GNU GPL:
@@ -28,7 +28,7 @@
 
 namespace HM\Limit_Login_Attempts;
 
-define('HM_LIMIT_LOGIN_VERSION', '1.0' );
+define('HM_LIMIT_LOGIN_VERSION', '1.1' );
 define('HM_LIMIT_LOGIN_DIR', __DIR__ . '/' );
 
 /* Different ways to get remote address: direct & behind proxy */
