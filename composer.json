@@ -1,0 +1,12 @@
+{
+    "name": "humanmade/hm-limit-login-attempts",
+    "description": "The original Limit Login Attempts plugin with the option to limit via username as well.",
+    "type": "wordpress-plugin",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Human Made",
+            "email": "hello@humanmade.com"
+        }
+    ]
+}
