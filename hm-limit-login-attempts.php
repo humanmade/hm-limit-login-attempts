@@ -3,12 +3,13 @@
  * Plugin Name: HM Limit Login Attempts
  * Plugin URI:   https://github.com/humanmade/hm-limit-login-attempts
  * Description:  Limit rate of login attempts, including by way of cookies, for each IP and user.
- * Based off the original Limit Login Attempts plugin version 1.7.1 by Johan Eenfeldt http://devel.kostdoktorn.se/limit-login-attempts
  * Author:       Human Made
  * Author URI:   http://hmn.md
  * Text Domain:  hm-limit-login-attempts
  * Version: 1.1
  *
+ * Copyright 2008 - 2011 Johan Eenfeldt
+ * Copyright 2015 - 2020 Human Made and Contributors
  *
  * Licenced under the GNU GPL:
  * This program is free software; you can redistribute it and/or modify
