@@ -34,7 +34,7 @@ class Options extends Plugin {
 
 		echo( '<tr><th scope="col">' . _x( "IP", "Internet address", 'limit-login-attempts' ) . '</th><th scope="col">' . __( 'Tried to log in as', 'limit-login-attempts' ) . '</th></tr>' );
 		foreach ( $log as $ip => $arr ) {
-			echo( '<tr><td class="limit-login-ip">' . $ip . '</td><td class="limit-login-max">' );
+			echo( '<tr><td class="limit-login-ip">' . esc_html( $ip ) . '</td><td class="limit-login-max">' );
 			$list = array();
 			foreach ( $arr as $user => $count ) {
 				$user_obj   = get_user_by( 'login', $user );
